@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { deletePeriod, listPeriods, PeriodEntry } from '@/lib/periods';
+import { deletePeriod, listPeriods, PeriodEntry, updatePeriod } from '@/lib/periods';
 import { deleteSymptomLog, listSymptomLogs, SymptomLog } from '@/lib/symptoms';
 import { deleteNote, listNotes, DailyNote } from '@/lib/notes';
 import { useFocusEffect } from '@react-navigation/native';
@@ -147,6 +147,30 @@ export default function HomeScreen() {
     ]);
   };
 
+  const handleEndPeriod = () => {
+    if (!latestPeriod) return;
+    Alert.alert('End period?', 'Set end date to today?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'End today',
+        onPress: async () => {
+          const today = new Date();
+          const day = String(today.getDate()).padStart(2, '0');
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const year = today.getFullYear();
+          const iso = `${year}-${month}-${day}`;
+          await updatePeriod({
+            id: latestPeriod.id,
+            startDate: latestPeriod.startDate,
+            endDate: iso,
+            flowIntensity: latestPeriod.flowIntensity,
+          });
+          load();
+        },
+      },
+    ]);
+  };
+
   const handleDeleteSymptom = (id: number) => {
     Alert.alert('Delete symptom log?', 'This entry will be removed.', [
       { text: 'Cancel', style: 'cancel' },
@@ -179,7 +203,7 @@ export default function HomeScreen() {
     <ScrollView
       className="flex-1 bg-background dark:bg-background-dark"
       contentContainerStyle={{ paddingBottom: 32 }}>
-      <View className="px-6 pt-8">
+      <View className="px-6 pt-12">
         <View className="mb-6">
           <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
             Good morning
@@ -204,8 +228,10 @@ export default function HomeScreen() {
           <View className="mt-4 flex-row gap-3">
             <Pressable
               className="rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
-              onPress={() => router.push('/log')}>
-              <Text className="text-sm font-semibold text-primary">Log period</Text>
+              onPress={latestPeriod && !latestPeriod.endDate ? handleEndPeriod : () => router.push('/log')}>
+              <Text className="text-sm font-semibold text-primary">
+                {latestPeriod && !latestPeriod.endDate ? 'End period' : 'Add period'}
+              </Text>
             </Pressable>
             <Pressable
               className="rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
@@ -242,21 +268,10 @@ export default function HomeScreen() {
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
             How are you feeling?
           </Text>
-          <View className="mt-4 flex-row flex-wrap gap-2">
-            {['Calm', 'Crampy', 'Low energy', 'Headache'].map((label) => (
-              <View
-                key={label}
-                className="rounded-full border border-border dark:border-border-dark px-4 py-2">
-                <Text className="text-sm text-foreground dark:text-foreground-dark">
-                  {label}
-                </Text>
-              </View>
-            ))}
-          </View>
           <Pressable
             className="mt-4 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => router.push('/symptoms')}>
-            <Text className="text-sm font-semibold text-primary">Log symptoms</Text>
+            <Text className="text-sm font-semibold text-primary">Add symptoms</Text>
           </Pressable>
         </View>
 

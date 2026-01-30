@@ -6,18 +6,20 @@ import {
   Text,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { createSymptomLog } from '@/lib/symptoms';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { createSymptomLog, getSymptomLogById, updateSymptomLog } from '@/lib/symptoms';
 import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 export default function SymptomsScreen() {
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [logDate, setLogDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loadedEdit, setLoadedEdit] = useState(false);
 
   const symptomOptions = ['Cramps', 'Headache', 'Bloating', 'Fatigue', 'Nausea'];
   const moodOptions = ['Calm', 'Low energy', 'Irritable', 'Anxious', 'Happy'];
@@ -44,17 +46,46 @@ export default function SymptomsScreen() {
     if (selected) setLogDate(selected);
   };
 
+  const parseIso = (iso: string) => {
+    const [year, month, day] = iso.split('-').map((part) => Number(part));
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day);
+  };
+
+  useEffect(() => {
+    if (!editId || loadedEdit) return;
+    getSymptomLogById(Number(editId)).then((log) => {
+      if (log) {
+        const date = parseIso(log.logDate);
+        if (date) setLogDate(date);
+        setSelectedSymptoms(log.symptoms);
+        setSelectedMoods(log.moods);
+      }
+      setLoadedEdit(true);
+    });
+  }, [editId, loadedEdit]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
-      await createSymptomLog({
-        logDate: formatIsoDate(logDate),
-        symptoms: selectedSymptoms,
-        moods: selectedMoods,
-        notes: null,
-      });
+      if (editId) {
+        await updateSymptomLog({
+          id: Number(editId),
+          logDate: formatIsoDate(logDate),
+          symptoms: selectedSymptoms,
+          moods: selectedMoods,
+          notes: null,
+        });
+      } else {
+        await createSymptomLog({
+          logDate: formatIsoDate(logDate),
+          symptoms: selectedSymptoms,
+          moods: selectedMoods,
+          notes: null,
+        });
+      }
       emitDataChanged();
-      Alert.alert('Saved', 'Your symptoms have been logged.');
+      Alert.alert('Saved', editId ? 'Your symptoms were updated.' : 'Your symptoms have been logged.');
       router.back();
     } finally {
       setSaving(false);
@@ -63,9 +94,9 @@ export default function SymptomsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-8">
+      <View className="px-6 pt-12">
         <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
-          Log symptoms
+          {editId ? 'Edit symptoms' : 'Add symptoms'}
         </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
           Select what you’re feeling today.

@@ -47,7 +47,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-8 pb-10">
+      <View className="px-6 pt-12 pb-10">
         <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
           Settings
         </Text>

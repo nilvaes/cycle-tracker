@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { listPeriods, listPeriodsByDate, PeriodEntry } from '@/lib/periods';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { listSymptomLogsByDate, SymptomLog } from '@/lib/symptoms';
-import { listNotesByDate, DailyNote } from '@/lib/notes';
+import { deleteSymptomLog, listSymptomLogsByDate, SymptomLog } from '@/lib/symptoms';
+import { deleteNote, listNotesByDate, DailyNote } from '@/lib/notes';
 import { router } from 'expo-router';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 
 function buildMarkedDates(periods: PeriodEntry[], color: string, textColor: string) {
   const marked: Record<string, any> = {};
@@ -129,7 +130,7 @@ export default function CalendarScreen() {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
   const predictionColor = colorScheme === 'dark' ? '#3A322A' : '#F1E8DA';
-  const fertileColor = palette.secondary;
+  const fertileColor = colorScheme === 'dark' ? '#C8A96B' : '#B08A3D';
 
   const formatDisplayDate = (isoDate: string) => {
     const [year, month, day] = isoDate.split('-');
@@ -176,7 +177,7 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-8 pb-10">
+      <View className="px-6 pt-12 pb-10">
         <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
           Calendar
         </Text>
@@ -239,11 +240,11 @@ export default function CalendarScreen() {
                     <Text className="text-xs text-muted dark:text-muted-dark capitalize">
                       {period.flowIntensity}
                     </Text>
-                    <Text
-                      className="text-xs text-primary"
+                    <Pressable
+                      className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
                       onPress={() => router.push(`/log?editId=${period.id}`)}>
-                      Edit
-                    </Text>
+                      <IconSymbol size={16} name="pencil" color={palette.icon} />
+                    </Pressable>
                   </View>
                 ))
               )}
@@ -257,9 +258,37 @@ export default function CalendarScreen() {
                 <Text className="mt-1 text-xs text-muted dark:text-muted-dark">None</Text>
               ) : (
                 selectedSymptoms.map((log) => (
-                  <Text key={log.id} className="mt-1 text-xs text-muted dark:text-muted-dark">
-                    {log.symptoms.join(', ') || 'None'} · {log.moods.join(', ') || 'None'}
-                  </Text>
+                  <View
+                    key={log.id}
+                    className="mt-2 flex-row items-center justify-between rounded-2xl border border-border dark:border-border-dark px-3 py-2">
+                    <Text className="text-xs text-muted dark:text-muted-dark">
+                      {log.symptoms.join(', ') || 'None'} · {log.moods.join(', ') || 'None'}
+                    </Text>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+                        onPress={() => router.push(`/symptoms?editId=${log.id}`)}>
+                        <IconSymbol size={16} name="pencil" color={palette.icon} />
+                      </Pressable>
+                      <Pressable
+                        className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+                        onPress={async () => {
+                          Alert.alert('Delete symptom log?', 'This entry will be removed.', [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                await deleteSymptomLog(log.id);
+                                if (selectedDate) loadDayDetails(selectedDate);
+                              },
+                            },
+                          ]);
+                        }}>
+                        <IconSymbol size={16} name="trash" color={palette.icon} />
+                      </Pressable>
+                    </View>
+                  </View>
                 ))
               )}
             </View>
@@ -272,9 +301,35 @@ export default function CalendarScreen() {
                 <Text className="mt-1 text-xs text-muted dark:text-muted-dark">None</Text>
               ) : (
                 selectedNotes.map((note) => (
-                  <Text key={note.id} className="mt-1 text-xs text-muted dark:text-muted-dark">
-                    {note.text}
-                  </Text>
+                  <View
+                    key={note.id}
+                    className="mt-2 flex-row items-center justify-between rounded-2xl border border-border dark:border-border-dark px-3 py-2">
+                    <Text className="text-xs text-muted dark:text-muted-dark">{note.text}</Text>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+                        onPress={() => router.push(`/note?editId=${note.id}`)}>
+                        <IconSymbol size={16} name="pencil" color={palette.icon} />
+                      </Pressable>
+                      <Pressable
+                        className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+                        onPress={async () => {
+                          Alert.alert('Delete note?', 'This entry will be removed.', [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                await deleteNote(note.id);
+                                if (selectedDate) loadDayDetails(selectedDate);
+                              },
+                            },
+                          ]);
+                        }}>
+                        <IconSymbol size={16} name="trash" color={palette.icon} />
+                      </Pressable>
+                    </View>
+                  </View>
                 ))
               )}
             </View>

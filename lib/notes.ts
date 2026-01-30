@@ -54,3 +54,30 @@ export async function deleteNote(id: number) {
   const db = await getDb();
   await db.runAsync('DELETE FROM daily_notes WHERE id = ?;', [id]);
 }
+
+export async function getNoteById(id: number) {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{
+    id: number;
+    log_date: string;
+    text: string;
+    created_at: number;
+  }>('SELECT * FROM daily_notes WHERE id = ?;', [id]);
+
+  if (!row) return null;
+  return {
+    id: row.id,
+    logDate: row.log_date,
+    text: row.text,
+    createdAt: row.created_at,
+  };
+}
+
+export async function updateNote(input: { id: number; logDate: string; text: string }) {
+  const db = await getDb();
+  await db.runAsync('UPDATE daily_notes SET log_date = ?, text = ? WHERE id = ?;', [
+    input.logDate,
+    input.text,
+    input.id,
+  ]);
+}

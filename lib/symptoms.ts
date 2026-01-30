@@ -75,3 +75,45 @@ export async function deleteSymptomLog(id: number) {
   const db = await getDb();
   await db.runAsync('DELETE FROM symptom_logs WHERE id = ?;', [id]);
 }
+
+export async function getSymptomLogById(id: number) {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{
+    id: number;
+    log_date: string;
+    symptoms: string;
+    moods: string;
+    notes: string | null;
+    created_at: number;
+  }>('SELECT * FROM symptom_logs WHERE id = ?;', [id]);
+
+  if (!row) return null;
+  return {
+    id: row.id,
+    logDate: row.log_date,
+    symptoms: JSON.parse(row.symptoms) as string[],
+    moods: JSON.parse(row.moods) as string[],
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+
+export async function updateSymptomLog(input: {
+  id: number;
+  logDate: string;
+  symptoms: string[];
+  moods: string[];
+  notes?: string | null;
+}) {
+  const db = await getDb();
+  await db.runAsync(
+    'UPDATE symptom_logs SET log_date = ?, symptoms = ?, moods = ?, notes = ? WHERE id = ?;',
+    [
+      input.logDate,
+      JSON.stringify(input.symptoms),
+      JSON.stringify(input.moods),
+      input.notes ?? null,
+      input.id,
+    ],
+  );
+}

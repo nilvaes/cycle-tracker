@@ -24,6 +24,7 @@ const MAPPING = {
   'calendar': 'calendar-month',
   'chart.bar.fill': 'bar-chart',
   'gearshape.fill': 'settings',
+  'pencil': 'edit',
 } as IconMapping;
 
 /**

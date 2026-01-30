@@ -98,9 +98,9 @@ export default function LogPeriodScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-8">
+      <View className="px-6 pt-12">
         <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
-          {editId ? 'Edit period' : 'Log period'}
+          {editId ? 'Edit period' : 'Add period'}
         </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
           Add your period details. Dates use DD/MM/YYYY.
