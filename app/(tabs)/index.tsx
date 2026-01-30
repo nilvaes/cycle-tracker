@@ -21,6 +21,13 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 export default function HomeScreen() {
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) return 'Good morning';
+    if (hour >= 12 && hour < 18) return 'Good afternoon';
+    if (hour >= 18 && hour < 23) return 'Good evening';
+    return 'Good night';
+  })();
   const colorScheme = useColorScheme();
   const iconColor = Colors[colorScheme ?? 'light'].icon;
   const [latestPeriod, setLatestPeriod] = useState<PeriodEntry | null>(null);
@@ -206,7 +213,7 @@ export default function HomeScreen() {
       <View className="px-6 pt-12">
         <View className="mb-6">
           <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
-            Good morning
+            {greeting}
           </Text>
           <Text className="mt-2 text-base text-muted dark:text-muted-dark">
             Let’s keep your cycle calm and clear.

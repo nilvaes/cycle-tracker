@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { listPeriods } from '@/lib/periods';
@@ -6,8 +6,16 @@ import { listSymptomLogs } from '@/lib/symptoms';
 import { deleteAllData } from '@/lib/db';
 import { emitDataChanged } from '@/lib/events';
 import { listNotes } from '@/lib/notes';
+import { loadSettings, saveSettings } from '@/lib/storage';
+import * as Notifications from 'expo-notifications';
+import { useEffect, useState } from 'react';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 
 export default function SettingsScreen() {
+  const [birthEnabled, setBirthEnabled] = useState(false);
+  const [birthTime, setBirthTime] = useState({ hour: 9, minute: 0 });
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const handleExport = async () => {
     const [periods, symptoms, notes] = await Promise.all([
       listPeriods(),
@@ -45,6 +53,67 @@ export default function SettingsScreen() {
     ]);
   };
 
+  useEffect(() => {
+    loadSettings().then((settings) => {
+      setBirthEnabled(settings.birthControlEnabled);
+      setBirthTime(settings.birthControlTime);
+    });
+  }, []);
+
+  const scheduleBirthControl = async (enabled: boolean, time: { hour: number; minute: number }) => {
+    if (!enabled) {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      return;
+    }
+
+    const permission = await Notifications.requestPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Notifications disabled', 'Please enable notifications in Settings.');
+      return;
+    }
+
+    await Notifications.cancelAllScheduledNotificationsAsync();
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Birth control reminder',
+        body: 'Time to take your pill.',
+        ...(Platform.OS === 'android' ? { channelId: 'reminders' } : {}),
+      },
+      trigger:
+        Platform.OS === 'android'
+          ? {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
+              hour: time.hour,
+              minute: time.minute,
+            }
+          : {
+              type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+              repeats: true,
+              hour: time.hour,
+              minute: time.minute,
+            },
+    });
+  };
+
+  const handleToggleBirth = async (value: boolean) => {
+    setBirthEnabled(value);
+    const next = { birthControlEnabled: value, birthControlTime: birthTime };
+    await saveSettings(next);
+    await scheduleBirthControl(value, birthTime);
+  };
+
+  const onChangeTime = async (_event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS !== 'ios') setShowTimePicker(false);
+    if (!selected) return;
+    const nextTime = { hour: selected.getHours(), minute: selected.getMinutes() };
+    setBirthTime(nextTime);
+    const next = { birthControlEnabled: birthEnabled, birthControlTime: nextTime };
+    await saveSettings(next);
+    if (birthEnabled) {
+      await scheduleBirthControl(true, nextTime);
+    }
+  };
+
   return (
     <ScrollView className="flex-1 bg-background dark:bg-background-dark">
       <View className="px-6 pt-12 pb-10">
@@ -76,6 +145,39 @@ export default function SettingsScreen() {
               Delete all data
             </Text>
           </Pressable>
+        </View>
+
+        <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
+          <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
+            Reminders
+          </Text>
+          <View className="mt-3 flex-row items-center justify-between">
+            <View className="pr-4">
+              <Text className="text-sm text-foreground dark:text-foreground-dark">
+                Birth control reminder
+              </Text>
+              <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
+                Turn on to receive a daily reminder.
+              </Text>
+            </View>
+            <Switch value={birthEnabled} onValueChange={handleToggleBirth} />
+          </View>
+          <Pressable
+            className="mt-4 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
+            onPress={() => setShowTimePicker((prev) => !prev)}>
+            <Text className="text-sm font-semibold text-primary">
+              Reminder time: {String(birthTime.hour).padStart(2, '0')}:
+              {String(birthTime.minute).padStart(2, '0')}
+            </Text>
+          </Pressable>
+          {showTimePicker ? (
+            <DateTimePicker
+              value={new Date(0, 0, 0, birthTime.hour, birthTime.minute)}
+              mode="time"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onChangeTime}
+            />
+          ) : null}
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
