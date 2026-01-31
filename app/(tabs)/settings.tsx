@@ -38,6 +38,76 @@ export default function SettingsScreen() {
     }
   };
 
+  const toCsv = (rows: string[][]) => {
+    const escape = (value: string) =>
+      `"${value.replace(/"/g, '""')}"`;
+    return rows.map((row) => row.map((cell) => escape(cell)).join(',')).join('\n');
+  };
+
+  const handleExportCsv = async () => {
+    const [periods, symptoms, notes] = await Promise.all([
+      listPeriods(),
+      listSymptomLogs(),
+      listNotes(),
+    ]);
+    const rows: string[][] = [
+      [
+        'type',
+        'date',
+        'end_date',
+        'flow',
+        'symptoms',
+        'moods',
+        'note',
+        'created_at',
+      ],
+    ];
+    periods.forEach((p) => {
+      rows.push([
+        'period',
+        p.startDate,
+        p.endDate ?? '',
+        p.flowIntensity,
+        '',
+        '',
+        '',
+        new Date(p.createdAt).toISOString(),
+      ]);
+    });
+    symptoms.forEach((s) => {
+      rows.push([
+        'symptom',
+        s.logDate,
+        '',
+        '',
+        s.symptoms.join('; '),
+        s.moods.join('; '),
+        '',
+        new Date(s.createdAt).toISOString(),
+      ]);
+    });
+    notes.forEach((n) => {
+      rows.push([
+        'note',
+        n.logDate,
+        '',
+        '',
+        '',
+        '',
+        n.text,
+        new Date(n.createdAt).toISOString(),
+      ]);
+    });
+    const csv = toCsv(rows);
+    const fileUri = `${FileSystem.documentDirectory}cycle-tracker-export.csv`;
+    await FileSystem.writeAsStringAsync(fileUri, csv);
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(fileUri);
+    } else {
+      Alert.alert('Export saved', `File saved to: ${fileUri}`);
+    }
+  };
+
   const handleDelete = async () => {
     Alert.alert('Delete all data?', 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
@@ -136,6 +206,11 @@ export default function SettingsScreen() {
             className="mt-4 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={handleExport}>
             <Text className="text-sm font-semibold text-primary">Export data</Text>
+          </Pressable>
+          <Pressable
+            className="mt-3 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
+            onPress={handleExportCsv}>
+            <Text className="text-sm font-semibold text-primary">Export CSV</Text>
           </Pressable>
 
           <Pressable
