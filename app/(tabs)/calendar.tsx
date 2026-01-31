@@ -188,9 +188,21 @@ export default function CalendarScreen() {
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8 pb-10">
-        <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
-          Calendar
-        </Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
+            Calendar
+          </Text>
+          <Pressable
+            className="h-9 w-9 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+            onPress={() =>
+              Alert.alert(
+                'Calendar tips',
+                'Tap a day to see details. Long‑press to quickly add a period, symptoms, or a note.',
+              )
+            }>
+            <IconSymbol size={18} name="questionmark.circle" color={palette.icon} />
+          </Pressable>
+        </View>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
           Your logged periods are highlighted.
         </Text>
