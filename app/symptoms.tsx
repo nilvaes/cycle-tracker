@@ -13,7 +13,7 @@ import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 export default function SymptomsScreen() {
-  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -53,17 +53,23 @@ export default function SymptomsScreen() {
   };
 
   useEffect(() => {
-    if (!editId || loadedEdit) return;
-    getSymptomLogById(Number(editId)).then((log) => {
-      if (log) {
-        const date = parseIso(log.logDate);
-        if (date) setLogDate(date);
-        setSelectedSymptoms(log.symptoms);
-        setSelectedMoods(log.moods);
-      }
-      setLoadedEdit(true);
-    });
-  }, [editId, loadedEdit]);
+    if (editId && !loadedEdit) {
+      getSymptomLogById(Number(editId)).then((log) => {
+        if (log) {
+          const parsed = parseIso(log.logDate);
+          if (parsed) setLogDate(parsed);
+          setSelectedSymptoms(log.symptoms);
+          setSelectedMoods(log.moods);
+        }
+        setLoadedEdit(true);
+      });
+      return;
+    }
+    if (!editId && date) {
+      const parsed = parseIso(date);
+      if (parsed) setLogDate(parsed);
+    }
+  }, [editId, loadedEdit, date]);
 
   const handleSave = async () => {
     setSaving(true);

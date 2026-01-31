@@ -149,6 +149,14 @@ export default function CalendarScreen() {
     }, [load]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedDate) {
+        loadDayDetails(selectedDate);
+      }
+    }, [selectedDate, loadDayDetails]),
+  );
+
   const markedDates = useMemo(() => {
     const base = buildMarkedDates(periods, palette.primary, palette.text);
     const predicted = addPrediction(base, periods, predictionColor, palette.text);
@@ -205,6 +213,23 @@ export default function CalendarScreen() {
             markingType="period"
             markedDates={markedDates}
             onDayPress={(day) => handleDayPress(day.dateString)}
+            onDayLongPress={(day) =>
+              Alert.alert('Quick add', 'Choose what to add for this day.', [
+                {
+                  text: 'Add period',
+                  onPress: () => router.push(`/log?date=${day.dateString}`),
+                },
+                {
+                  text: 'Add symptoms',
+                  onPress: () => router.push(`/symptoms?date=${day.dateString}`),
+                },
+                {
+                  text: 'Add note',
+                  onPress: () => router.push(`/note?date=${day.dateString}`),
+                },
+                { text: 'Cancel', style: 'cancel' },
+              ])
+            }
             theme={{
               backgroundColor: palette.surface,
               calendarBackground: palette.surface,

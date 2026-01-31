@@ -6,7 +6,7 @@ import { createNote, getNoteById, updateNote } from '@/lib/notes';
 import { emitDataChanged } from '@/lib/events';
 
 export default function NoteScreen() {
-  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
   const [logDate, setLogDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [text, setText] = useState('');
@@ -39,16 +39,22 @@ export default function NoteScreen() {
   };
 
   useEffect(() => {
-    if (!editId || loadedEdit) return;
-    getNoteById(Number(editId)).then((note) => {
-      if (note) {
-        const date = parseIso(note.logDate);
-        if (date) setLogDate(date);
-        setText(note.text);
-      }
-      setLoadedEdit(true);
-    });
-  }, [editId, loadedEdit]);
+    if (editId && !loadedEdit) {
+      getNoteById(Number(editId)).then((note) => {
+        if (note) {
+          const parsed = parseIso(note.logDate);
+          if (parsed) setLogDate(parsed);
+          setText(note.text);
+        }
+        setLoadedEdit(true);
+      });
+      return;
+    }
+    if (!editId && date) {
+      const parsed = parseIso(date);
+      if (parsed) setLogDate(parsed);
+    }
+  }, [editId, loadedEdit, date]);
 
   const handleSave = async () => {
     if (!text.trim()) {

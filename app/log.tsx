@@ -6,7 +6,7 @@ import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 export default function LogPeriodScreen() {
-  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [flow, setFlow] = useState<FlowIntensity>('medium');
@@ -49,18 +49,24 @@ export default function LogPeriodScreen() {
   };
 
   useEffect(() => {
-    if (!editId || loadedEdit) return;
-    getPeriodById(Number(editId)).then((period) => {
-      if (period) {
-        const start = parseIso(period.startDate);
-        const end = parseIso(period.endDate);
-        if (start) setStartDate(start);
-        setEndDate(end);
-        setFlow(period.flowIntensity);
-      }
-      setLoadedEdit(true);
-    });
-  }, [editId, loadedEdit]);
+    if (editId && !loadedEdit) {
+      getPeriodById(Number(editId)).then((period) => {
+        if (period) {
+          const start = parseIso(period.startDate);
+          const end = parseIso(period.endDate);
+          if (start) setStartDate(start);
+          setEndDate(end);
+          setFlow(period.flowIntensity);
+        }
+        setLoadedEdit(true);
+      });
+      return;
+    }
+    if (!editId && date) {
+      const start = parseIso(date);
+      if (start) setStartDate(start);
+    }
+  }, [editId, loadedEdit, date]);
 
   const handleSave = async () => {
     setError(null);
