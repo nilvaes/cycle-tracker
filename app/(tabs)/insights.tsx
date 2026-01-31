@@ -1,4 +1,5 @@
 import { ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -94,8 +95,9 @@ export default function InsightsScreen() {
   const maxSymptom = Math.max(...symptomCounts.map(([, count]) => count), 0);
 
   return (
-    <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-12 pb-10">
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+      <ScrollView>
+        <View className="px-6 pt-8 pb-10">
         <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
           Insights
         </Text>
@@ -108,7 +110,7 @@ export default function InsightsScreen() {
             Average cycle length
           </Text>
           <Text className="mt-2 text-3xl font-semibold text-foreground dark:text-foreground-dark">
-            {averageCycle ? `${averageCycle} days` : 'Not enough data'}
+            {averageCycle ? `${averageCycle} days` : 'Log 2+ cycles'}
           </Text>
           <Text className="mt-1 text-sm text-muted dark:text-muted-dark">
             Log at least two periods to calculate this.
@@ -160,7 +162,7 @@ export default function InsightsScreen() {
             Most common symptoms
           </Text>
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            {mostCommonSymptom ?? 'No symptoms logged yet.'}
+            {mostCommonSymptom ?? 'Log symptoms to see patterns.'}
           </Text>
           <Text className="mt-4 text-lg font-semibold text-foreground dark:text-foreground-dark">
             Most common mood
@@ -201,7 +203,8 @@ export default function InsightsScreen() {
             </View>
           )}
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

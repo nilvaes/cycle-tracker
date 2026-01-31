@@ -76,6 +76,24 @@ export async function deleteSymptomLog(id: number) {
   await db.runAsync('DELETE FROM symptom_logs WHERE id = ?;', [id]);
 }
 
+export async function importSymptomLogs(
+  logs: Array<Omit<SymptomLog, 'id'>>,
+) {
+  const db = await getDb();
+  for (const log of logs) {
+    await db.runAsync(
+      'INSERT INTO symptom_logs (log_date, symptoms, moods, notes, created_at) VALUES (?, ?, ?, ?, ?);',
+      [
+        log.logDate,
+        JSON.stringify(log.symptoms),
+        JSON.stringify(log.moods),
+        log.notes ?? null,
+        log.createdAt,
+      ],
+    );
+  }
+}
+
 export async function getSymptomLogById(id: number) {
   const db = await getDb();
   const row = await db.getFirstAsync<{

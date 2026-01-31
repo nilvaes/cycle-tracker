@@ -1,4 +1,5 @@
 import { Alert, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
@@ -77,8 +78,9 @@ export default function NoteScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-12">
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+      <ScrollView>
+        <View className="px-6 pt-8">
         <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
           {editId ? 'Edit note' : 'Add note'}
         </Text>
@@ -132,7 +134,8 @@ export default function NoteScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

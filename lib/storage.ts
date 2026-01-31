@@ -5,11 +5,29 @@ const SETTINGS_PATH = `${FileSystem.documentDirectory}settings.json`;
 export type AppSettings = {
   birthControlEnabled: boolean;
   birthControlTime: { hour: number; minute: number };
+  birthControlNotificationId: string | null;
+  periodReminderEnabled: boolean;
+  periodReminderLeadDays: number;
+  periodReminderTime: { hour: number; minute: number };
+  periodReminderNotificationId: string | null;
+  cycleLengthDays: number;
+  periodLengthDays: number;
+  lastPeriodStartDate: string | null;
+  onboarded: boolean;
 };
 
 export const defaultSettings: AppSettings = {
   birthControlEnabled: false,
   birthControlTime: { hour: 9, minute: 0 },
+  birthControlNotificationId: null,
+  periodReminderEnabled: false,
+  periodReminderLeadDays: 2,
+  periodReminderTime: { hour: 9, minute: 0 },
+  periodReminderNotificationId: null,
+  cycleLengthDays: 28,
+  periodLengthDays: 5,
+  lastPeriodStartDate: null,
+  onboarded: false,
 };
 
 export async function loadSettings(): Promise<AppSettings> {

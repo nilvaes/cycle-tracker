@@ -6,6 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { createSymptomLog, getSymptomLogById, updateSymptomLog } from '@/lib/symptoms';
@@ -99,8 +100,9 @@ export default function SymptomsScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-12">
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+      <ScrollView>
+        <View className="px-6 pt-8">
         <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
           {editId ? 'Edit symptoms' : 'Add symptoms'}
         </Text>
@@ -184,7 +186,8 @@ export default function SymptomsScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

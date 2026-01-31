@@ -55,6 +55,16 @@ export async function deleteNote(id: number) {
   await db.runAsync('DELETE FROM daily_notes WHERE id = ?;', [id]);
 }
 
+export async function importNotes(notes: Array<Omit<DailyNote, 'id'>>) {
+  const db = await getDb();
+  for (const note of notes) {
+    await db.runAsync(
+      'INSERT INTO daily_notes (log_date, text, created_at) VALUES (?, ?, ?);',
+      [note.logDate, note.text, note.createdAt],
+    );
+  }
+}
+
 export async function getNoteById(id: number) {
   const db = await getDb();
   const row = await db.getFirstAsync<{

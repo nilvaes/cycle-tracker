@@ -9,6 +9,7 @@ import {
   View,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { deletePeriod, listPeriods, PeriodEntry, updatePeriod } from '@/lib/periods';
@@ -207,10 +208,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScrollView
-      className="flex-1 bg-background dark:bg-background-dark"
-      contentContainerStyle={{ paddingBottom: 32 }}>
-      <View className="px-6 pt-12">
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+        <View className="px-6 pt-8">
         <View className="mb-6">
           <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
             {greeting}
@@ -230,7 +230,7 @@ export default function HomeScreen() {
           <Text className="mt-1 text-base text-muted dark:text-muted-dark">
             {nextPeriodDate
               ? `Estimated: ${formatDisplayDate(nextPeriodDate)}`
-              : 'We’ll start predictions once you log a period.'}
+              : 'Log a period to start predictions.'}
           </Text>
           <View className="mt-4 flex-row gap-3">
             <Pressable
@@ -297,7 +297,7 @@ export default function HomeScreen() {
           </Pressable>
           {recentPeriods.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              No periods logged yet.
+              Your logged periods will appear here.
             </Text>
           ) : (
             <Animated.View
@@ -342,7 +342,7 @@ export default function HomeScreen() {
           </Pressable>
           {recentSymptoms.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              No symptom logs yet.
+              Your symptom logs will appear here.
             </Text>
           ) : (
             <Animated.View
@@ -389,7 +389,9 @@ export default function HomeScreen() {
             />
           </Pressable>
           {recentNotes.length === 0 ? (
-            <Text className="mt-2 text-sm text-muted dark:text-muted-dark">No notes yet.</Text>
+            <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
+              Your notes will appear here.
+            </Text>
           ) : (
             <Animated.View
               key={showAllNotes ? 'notes-expanded' : 'notes-collapsed'}
@@ -415,7 +417,8 @@ export default function HomeScreen() {
             </Animated.View>
           )}
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

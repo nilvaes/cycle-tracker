@@ -1,9 +1,12 @@
 import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { createPeriod, FlowIntensity, getPeriodById, updatePeriod } from '@/lib/periods';
 import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { loadSettings, saveSettings } from '@/lib/storage';
+import { schedulePeriodReminder } from '@/lib/reminders';
 
 export default function LogPeriodScreen() {
   const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
@@ -92,6 +95,14 @@ export default function LogPeriodScreen() {
           flowIntensity: flow,
         });
       }
+      const current = await loadSettings();
+      const next = {
+        ...current,
+        lastPeriodStartDate: formatIsoDate(startDate),
+      };
+      const reminderId = await schedulePeriodReminder(next);
+      next.periodReminderNotificationId = reminderId;
+      await saveSettings(next);
       emitDataChanged();
       Alert.alert('Saved', editId ? 'Your period was updated.' : 'Your period has been logged.');
       router.back();
@@ -103,8 +114,9 @@ export default function LogPeriodScreen() {
   };
 
   return (
-    <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-12">
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+      <ScrollView>
+        <View className="px-6 pt-8">
         <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
           {editId ? 'Edit period' : 'Add period'}
         </Text>
@@ -190,7 +202,8 @@ export default function LogPeriodScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

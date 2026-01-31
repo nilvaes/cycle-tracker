@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -184,8 +185,9 @@ export default function CalendarScreen() {
   }, [selectedDate, loadDayDetails]);
 
   return (
-    <ScrollView className="flex-1 bg-background dark:bg-background-dark">
-      <View className="px-6 pt-12 pb-10">
+    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+      <ScrollView>
+        <View className="px-6 pt-8 pb-10">
         <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
           Calendar
         </Text>
@@ -256,7 +258,9 @@ export default function CalendarScreen() {
                 Periods
               </Text>
               {selectedPeriods.length === 0 ? (
-                <Text className="mt-1 text-xs text-muted dark:text-muted-dark">None</Text>
+                <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
+                  No periods for this day.
+                </Text>
               ) : (
                 selectedPeriods.map((period) => (
                   <View
@@ -280,7 +284,9 @@ export default function CalendarScreen() {
                 Symptoms
               </Text>
               {selectedSymptoms.length === 0 ? (
-                <Text className="mt-1 text-xs text-muted dark:text-muted-dark">None</Text>
+                <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
+                  No symptoms logged.
+                </Text>
               ) : (
                 selectedSymptoms.map((log) => (
                   <View
@@ -323,7 +329,9 @@ export default function CalendarScreen() {
                 Notes
               </Text>
               {selectedNotes.length === 0 ? (
-                <Text className="mt-1 text-xs text-muted dark:text-muted-dark">None</Text>
+                <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
+                  No notes for this day.
+                </Text>
               ) : (
                 selectedNotes.map((note) => (
                   <View
@@ -364,7 +372,8 @@ export default function CalendarScreen() {
         <Text className="mt-4 text-xs text-muted dark:text-muted-dark">
           Predictions and fertility windows are estimates and may vary.
         </Text>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

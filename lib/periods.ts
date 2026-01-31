@@ -101,3 +101,13 @@ export async function deletePeriod(id: number) {
   const db = await getDb();
   await db.runAsync('DELETE FROM periods WHERE id = ?;', [id]);
 }
+
+export async function importPeriods(periods: Array<Omit<PeriodEntry, 'id'>>) {
+  const db = await getDb();
+  for (const period of periods) {
+    await db.runAsync(
+      'INSERT INTO periods (start_date, end_date, flow_intensity, created_at) VALUES (?, ?, ?, ?);',
+      [period.startDate, period.endDate ?? null, period.flowIntensity, period.createdAt],
+    );
+  }
+}
