@@ -20,12 +20,12 @@ function daysBetween(startIso: string, endIso: string) {
 export async function scheduleBirthControlReminder(
   settings: AppSettings,
 ): Promise<string | null> {
+  if (settings.birthControlNotificationId) {
+    await Notifications.cancelScheduledNotificationAsync(
+      settings.birthControlNotificationId,
+    );
+  }
   if (!settings.birthControlEnabled) {
-    if (settings.birthControlNotificationId) {
-      await Notifications.cancelScheduledNotificationAsync(
-        settings.birthControlNotificationId,
-      );
-    }
     return null;
   }
 
@@ -62,12 +62,12 @@ export async function scheduleBirthControlReminder(
 }
 
 export async function schedulePeriodReminder(settings: AppSettings): Promise<string | null> {
+  if (settings.periodReminderNotificationId) {
+    await Notifications.cancelScheduledNotificationAsync(
+      settings.periodReminderNotificationId,
+    );
+  }
   if (!settings.periodReminderEnabled) {
-    if (settings.periodReminderNotificationId) {
-      await Notifications.cancelScheduledNotificationAsync(
-        settings.periodReminderNotificationId,
-      );
-    }
     return null;
   }
 
