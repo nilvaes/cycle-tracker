@@ -1,5 +1,6 @@
 import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { createPeriod, FlowIntensity, getPeriodById, updatePeriod } from '@/lib/periods';
@@ -117,9 +118,14 @@ export default function LogPeriodScreen() {
     <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8">
-        <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
-          {editId ? 'Edit period' : 'Add period'}
-        </Text>
+          <Pressable
+            className="mb-4 h-10 w-10 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+            onPress={() => router.back()}>
+            <IconSymbol size={20} name="chevron.left" color="#6B6561" />
+          </Pressable>
+          <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
+            {editId ? 'Edit period' : 'Add period'}
+          </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
           Add your period details. Dates use DD/MM/YYYY.
         </Text>
