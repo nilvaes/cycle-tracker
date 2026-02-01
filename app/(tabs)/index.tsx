@@ -225,7 +225,11 @@ export default function HomeScreen() {
             Next period
           </Text>
           <Text className="mt-2 text-3xl font-semibold text-foreground dark:text-foreground-dark">
-            {daysUntilNext !== null ? `In ${daysUntilNext} days` : 'Log your first period'}
+            {daysUntilNext !== null
+              ? `In ${daysUntilNext} days`
+              : latestPeriod
+                ? 'Log one more period to predict'
+                : 'Log your first period'}
           </Text>
           <Text className="mt-1 text-base text-muted dark:text-muted-dark">
             {nextPeriodDate

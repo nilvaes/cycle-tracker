@@ -126,7 +126,7 @@ export default function LogPeriodScreen() {
 
         <View className="mt-6 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
           <Text className="text-sm text-muted dark:text-muted-dark">Start date</Text>
-          <Pressable onPress={() => setShowStartPicker(true)}>
+          <Pressable onPress={() => setShowStartPicker((prev) => !prev)}>
             <Text className="mt-2 text-lg text-foreground dark:text-foreground-dark">
               {formatDisplayDate(startDate)}
             </Text>
@@ -143,7 +143,7 @@ export default function LogPeriodScreen() {
 
         <View className="mt-4 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
           <Text className="text-sm text-muted dark:text-muted-dark">End date (optional)</Text>
-          <Pressable onPress={() => setShowEndPicker(true)}>
+          <Pressable onPress={() => setShowEndPicker((prev) => !prev)}>
             <Text className="mt-2 text-lg text-foreground dark:text-foreground-dark">
               {formatDisplayDate(endDate)}
             </Text>
