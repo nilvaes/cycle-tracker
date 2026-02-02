@@ -416,25 +416,6 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
-        <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
-          <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Onboarding
-          </Text>
-          <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            Re-run setup and reminders.
-          </Text>
-          <Pressable
-            className="mt-3 rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
-            onPress={async () => {
-              const current = await loadSettings();
-              await saveSettings({ ...current, onboarded: false });
-              Alert.alert('Reset', 'Onboarding will show next time you open the app.');
-            }}>
-            <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-              Reset onboarding
-            </Text>
-          </Pressable>
-        </View>
         </View>
       </ScrollView>
     </SafeAreaView>
