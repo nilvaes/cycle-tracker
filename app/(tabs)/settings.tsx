@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
 import { scheduleBirthControlReminder, schedulePeriodReminder } from '@/lib/reminders';
+import * as Notifications from 'expo-notifications';
 import * as DocumentPicker from 'expo-document-picker';
 import { importPeriods } from '@/lib/periods';
 import { importSymptomLogs } from '@/lib/symptoms';
@@ -405,6 +406,26 @@ export default function SettingsScreen() {
               onChange={onChangeTime}
             />
           ) : null}
+          <Pressable
+            className="mt-4 rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
+            onPress={async () => {
+              await Notifications.cancelAllScheduledNotificationsAsync();
+              const current = await loadSettings();
+              await saveSettings({
+                ...current,
+                birthControlEnabled: false,
+                periodReminderEnabled: false,
+                birthControlNotificationId: null,
+                periodReminderNotificationId: null,
+              });
+              setBirthEnabled(false);
+              setPeriodEnabled(false);
+              Alert.alert('Cleared', 'All reminders have been cleared.');
+            }}>
+            <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
+              Clear all reminders
+            </Text>
+          </Pressable>
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
