@@ -21,13 +21,17 @@ import Animated, { Layout } from 'react-native-reanimated';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
+import { localizeOptionList } from '@/lib/options';
 export default function HomeScreen() {
+  const { language } = useLanguage();
   const greeting = (() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Good morning';
-    if (hour >= 12 && hour < 18) return 'Good afternoon';
-    if (hour >= 18 && hour < 23) return 'Good evening';
-    return 'Good night';
+    if (hour >= 5 && hour < 12) return t('greeting.morning');
+    if (hour >= 12 && hour < 18) return t('greeting.afternoon');
+    if (hour >= 18 && hour < 23) return t('greeting.evening');
+    return t('greeting.night');
   })();
   const colorScheme = useColorScheme();
   const iconColor = Colors[colorScheme ?? 'light'].icon;
@@ -142,10 +146,10 @@ export default function HomeScreen() {
   };
 
   const handleDeletePeriod = (id: number) => {
-    Alert.alert('Delete period?', 'This entry will be removed.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deletePeriodTitle'), t('alerts.deletePeriodBody'), [
+      { text: t('actions.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('actions.delete'),
         style: 'destructive',
         onPress: async () => {
           await deletePeriod(id);
@@ -157,10 +161,10 @@ export default function HomeScreen() {
 
   const handleEndPeriod = () => {
     if (!latestPeriod) return;
-    Alert.alert('End period?', 'Set end date to today?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.endPeriodTitle'), t('alerts.endPeriodBody'), [
+      { text: t('actions.cancel'), style: 'cancel' },
       {
-        text: 'End today',
+        text: t('actions.endToday'),
         onPress: async () => {
           const today = new Date();
           const day = String(today.getDate()).padStart(2, '0');
@@ -180,10 +184,10 @@ export default function HomeScreen() {
   };
 
   const handleDeleteSymptom = (id: number) => {
-    Alert.alert('Delete symptom log?', 'This entry will be removed.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deleteSymptomTitle'), t('alerts.deleteSymptomBody'), [
+      { text: t('actions.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('actions.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteSymptomLog(id);
@@ -194,10 +198,10 @@ export default function HomeScreen() {
   };
 
   const handleDeleteNote = (id: number) => {
-    Alert.alert('Delete note?', 'This entry will be removed.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deleteNoteTitle'), t('alerts.deleteNoteBody'), [
+      { text: t('actions.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('actions.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteNote(id);
@@ -208,7 +212,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      key={`home-${language}`}
+      className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         <View className="px-6 pt-8">
         <View className="mb-6">
@@ -216,57 +222,57 @@ export default function HomeScreen() {
             {greeting}
           </Text>
           <Text className="mt-2 text-base text-muted dark:text-muted-dark">
-            Let’s keep your cycle calm and clear.
+            {t('home.tagline')}
           </Text>
         </View>
 
         <View className="mb-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-sm uppercase tracking-wide text-muted dark:text-muted-dark">
-            Next period
+            {t('home.nextPeriod')}
           </Text>
           <Text className="mt-2 text-3xl font-semibold text-foreground dark:text-foreground-dark">
             {daysUntilNext !== null
-              ? `In ${daysUntilNext} days`
+              ? t('home.inDays', { days: daysUntilNext })
               : latestPeriod
-                ? 'Log one more period to predict'
-                : 'Log your first period'}
+                ? t('home.logMore')
+                : t('home.logFirst')}
           </Text>
           <Text className="mt-1 text-base text-muted dark:text-muted-dark">
             {nextPeriodDate
-              ? `Estimated: ${formatDisplayDate(nextPeriodDate)}`
-              : 'Log a period to start predictions.'}
+              ? t('home.estimated', { date: formatDisplayDate(nextPeriodDate) })
+              : ''}
           </Text>
           <View className="mt-4 flex-row gap-3">
             <Pressable
               className="rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
               onPress={latestPeriod && !latestPeriod.endDate ? handleEndPeriod : () => router.push('/log')}>
               <Text className="text-sm font-semibold text-primary">
-                {latestPeriod && !latestPeriod.endDate ? 'End period' : 'Add period'}
+                {latestPeriod && !latestPeriod.endDate ? t('home.endPeriod') : t('home.addPeriod')}
               </Text>
             </Pressable>
             <Pressable
               className="rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
               onPress={() => router.push('/note')}>
-              <Text className="text-sm font-semibold text-primary">Add note</Text>
+              <Text className="text-sm font-semibold text-primary">{t('home.addNote')}</Text>
             </Pressable>
           </View>
         </View>
 
         <View className="mb-4 flex-row gap-4">
           <View className="flex-1 rounded-2xl bg-secondary p-4">
-            <Text className="text-sm text-foreground">Cycle day</Text>
+            <Text className="text-sm text-foreground">{t('home.cycleDay')}</Text>
             <Text className="mt-2 text-2xl font-semibold text-foreground">
-              {cycleDay ? `Day ${cycleDay}` : '—'}
+              {cycleDay ? t('home.cycleDayValue', { day: cycleDay }) : '—'}
             </Text>
           </View>
           <View className="flex-1 rounded-2xl bg-accent p-4">
-            <Text className="text-sm text-foreground">Avg length</Text>
+            <Text className="text-sm text-foreground">{t('home.avgLength')}</Text>
             <Text className="mt-2 text-2xl font-semibold text-foreground">
-              {cycleAverage ? `${cycleAverage} days` : '—'}
+              {cycleAverage ? t('home.avgLengthValue', { days: cycleAverage }) : '—'}
             </Text>
             {cycleRange && cycleRange.min !== cycleRange.max ? (
               <Text className="mt-1 text-xs text-foreground">
-                Range {cycleRange.min}–{cycleRange.max}
+                {t('home.range', { min: cycleRange.min, max: cycleRange.max })}
               </Text>
             ) : null}
           </View>
@@ -274,15 +280,15 @@ export default function HomeScreen() {
 
         <View className="rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Today’s check‑in
+            {t('home.checkIn')}
           </Text>
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            How are you feeling?
+            {t('home.howFeeling')}
           </Text>
           <Pressable
             className="mt-4 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => router.push('/symptoms')}>
-            <Text className="text-sm font-semibold text-primary">Add symptoms</Text>
+            <Text className="text-sm font-semibold text-primary">{t('home.addSymptoms')}</Text>
           </Pressable>
         </View>
 
@@ -291,7 +297,7 @@ export default function HomeScreen() {
             className="flex-row items-center justify-between active:opacity-80"
             onPress={togglePeriods}>
             <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-              Recent periods
+              {t('home.recentPeriods')}
             </Text>
             <IconSymbol
               size={18}
@@ -301,7 +307,7 @@ export default function HomeScreen() {
           </Pressable>
           {recentPeriods.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              Your logged periods will appear here.
+              {t('home.emptyPeriods')}
             </Text>
           ) : (
             <Animated.View
@@ -317,7 +323,7 @@ export default function HomeScreen() {
                       {formatDisplayDate(period.startDate)}
                     </Text>
                     <Text className="text-xs text-muted dark:text-muted-dark capitalize">
-                      {period.flowIntensity}
+                      {t(`log.${period.flowIntensity}`)}
                     </Text>
                   </View>
                   <Pressable
@@ -336,7 +342,7 @@ export default function HomeScreen() {
             className="flex-row items-center justify-between active:opacity-80"
             onPress={toggleSymptoms}>
             <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-              Recent symptoms
+              {t('home.recentSymptoms')}
             </Text>
             <IconSymbol
               size={18}
@@ -346,7 +352,7 @@ export default function HomeScreen() {
           </Pressable>
           {recentSymptoms.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              Your symptom logs will appear here.
+              {t('home.emptySymptoms')}
             </Text>
           ) : (
             <Animated.View
@@ -362,10 +368,12 @@ export default function HomeScreen() {
                       {formatDisplayDate(log.logDate)}
                     </Text>
                     <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
-                      Symptoms: {log.symptoms.join(', ') || 'None'}
+                      {t('home.symptomsLabel')}:{' '}
+                      {localizeOptionList('symptom', log.symptoms).join(', ') || t('common.none')}
                     </Text>
                     <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
-                      Mood: {log.moods.join(', ') || 'None'}
+                      {t('home.moodLabel')}:{' '}
+                      {localizeOptionList('mood', log.moods).join(', ') || t('common.none')}
                     </Text>
                   </View>
                   <Pressable
@@ -384,7 +392,7 @@ export default function HomeScreen() {
             className="flex-row items-center justify-between active:opacity-80"
             onPress={toggleNotes}>
             <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-              Recent notes
+              {t('home.recentNotes')}
             </Text>
             <IconSymbol
               size={18}
@@ -394,7 +402,7 @@ export default function HomeScreen() {
           </Pressable>
           {recentNotes.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              Your notes will appear here.
+              {t('home.emptyNotes')}
             </Text>
           ) : (
             <Animated.View

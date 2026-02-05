@@ -13,8 +13,12 @@ import { useEffect, useState } from 'react';
 import { createSymptomLog, getSymptomLogById, updateSymptomLog } from '@/lib/symptoms';
 import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
+import { localizeOptionList } from '@/lib/options';
 
 export default function SymptomsScreen() {
+  const { language } = useLanguage();
   const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
@@ -23,8 +27,20 @@ export default function SymptomsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loadedEdit, setLoadedEdit] = useState(false);
 
-  const symptomOptions = ['Cramps', 'Headache', 'Bloating', 'Fatigue', 'Nausea'];
-  const moodOptions = ['Calm', 'Low energy', 'Irritable', 'Anxious', 'Happy'];
+  const symptomOptions = [
+    t('options.symptoms.cramps'),
+    t('options.symptoms.headache'),
+    t('options.symptoms.bloating'),
+    t('options.symptoms.fatigue'),
+    t('options.symptoms.nausea'),
+  ];
+  const moodOptions = [
+    t('options.moods.calm'),
+    t('options.moods.lowEnergy'),
+    t('options.moods.irritable'),
+    t('options.moods.anxious'),
+    t('options.moods.happy'),
+  ];
 
   const toggleItem = (list: string[], value: string) =>
     list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
@@ -60,8 +76,8 @@ export default function SymptomsScreen() {
         if (log) {
           const parsed = parseIso(log.logDate);
           if (parsed) setLogDate(parsed);
-          setSelectedSymptoms(log.symptoms);
-          setSelectedMoods(log.moods);
+          setSelectedSymptoms(localizeOptionList('symptom', log.symptoms));
+          setSelectedMoods(localizeOptionList('mood', log.moods));
         }
         setLoadedEdit(true);
       });
@@ -72,6 +88,11 @@ export default function SymptomsScreen() {
       if (parsed) setLogDate(parsed);
     }
   }, [editId, loadedEdit, date]);
+
+  useEffect(() => {
+    setSelectedSymptoms((current) => localizeOptionList('symptom', current));
+    setSelectedMoods((current) => localizeOptionList('mood', current));
+  }, [language]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -93,7 +114,10 @@ export default function SymptomsScreen() {
         });
       }
       emitDataChanged();
-      Alert.alert('Saved', editId ? 'Your symptoms were updated.' : 'Your symptoms have been logged.');
+      Alert.alert(
+        t('alerts.savedTitle'),
+        editId ? t('alerts.symptomsUpdated') : t('alerts.symptomsLogged'),
+      );
       router.back();
     } finally {
       setSaving(false);
@@ -101,7 +125,9 @@ export default function SymptomsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      key={`symptoms-${language}`}
+      className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8">
           <Pressable
@@ -110,14 +136,14 @@ export default function SymptomsScreen() {
             <IconSymbol size={20} name="chevron.left" color="#6B6561" />
           </Pressable>
           <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
-            {editId ? 'Edit symptoms' : 'Add symptoms'}
+            {editId ? t('log.editSymptoms') : t('log.addSymptoms')}
           </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-          Select what you’re feeling today.
+          {t('log.symptomsHint')}
         </Text>
 
         <View className="mt-4 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Log date</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.logDate')}</Text>
           <Pressable onPress={() => setShowDatePicker(true)}>
             <Text className="mt-2 text-lg text-foreground dark:text-foreground-dark">
               {formatDisplayDate(logDate)}
@@ -134,7 +160,7 @@ export default function SymptomsScreen() {
         ) : null}
 
         <View className="mt-6 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Symptoms</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.symptoms')}</Text>
           <View className="mt-3 flex-row flex-wrap gap-2">
             {symptomOptions.map((label) => {
               const selected = selectedSymptoms.includes(label);
@@ -155,7 +181,7 @@ export default function SymptomsScreen() {
         </View>
 
         <View className="mt-4 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Mood</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.mood')}</Text>
           <View className="mt-3 flex-row flex-wrap gap-2">
             {moodOptions.map((label) => {
               const selected = selectedMoods.includes(label);
@@ -180,7 +206,7 @@ export default function SymptomsScreen() {
             className="rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => router.back()}>
             <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-              Cancel
+              {t('log.cancel')}
             </Text>
           </Pressable>
           <Pressable
@@ -188,7 +214,7 @@ export default function SymptomsScreen() {
             onPress={handleSave}
             disabled={saving}>
             <Text className="text-sm font-semibold text-primary">
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('log.saving') : t('log.save')}
             </Text>
           </Pressable>
         </View>

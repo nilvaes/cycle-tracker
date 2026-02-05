@@ -5,6 +5,9 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { listPeriods, PeriodEntry } from '@/lib/periods';
 import { listSymptomLogs, SymptomLog } from '@/lib/symptoms';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
+import { getOptionKey, localizeMoodKey, localizeSymptomKey } from '@/lib/options';
 
 function daysBetween(startIso: string, endIso: string) {
   const start = new Date(startIso);
@@ -44,7 +47,8 @@ function buildSymptomCounts(logs: SymptomLog[]) {
   const counts = new Map<string, number>();
   for (const log of logs) {
     for (const s of log.symptoms) {
-      counts.set(s, (counts.get(s) ?? 0) + 1);
+      const key = getOptionKey('symptom', s);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
     }
   }
   return Array.from(counts.entries())
@@ -53,6 +57,7 @@ function buildSymptomCounts(logs: SymptomLog[]) {
 }
 
 export default function InsightsScreen() {
+  const { language } = useLanguage();
   const [periods, setPeriods] = useState<PeriodEntry[]>([]);
   const [symptomLogs, setSymptomLogs] = useState<SymptomLog[]>([]);
 
@@ -80,12 +85,12 @@ export default function InsightsScreen() {
   }, [periods]);
 
   const mostCommonSymptom = useMemo(() => {
-    const all = symptomLogs.flatMap((log) => log.symptoms);
+    const all = symptomLogs.flatMap((log) => log.symptoms).map((s) => getOptionKey('symptom', s));
     return mostCommon(all);
   }, [symptomLogs]);
 
   const mostCommonMood = useMemo(() => {
-    const all = symptomLogs.flatMap((log) => log.moods);
+    const all = symptomLogs.flatMap((log) => log.moods).map((m) => getOptionKey('mood', m));
     return mostCommon(all);
   }, [symptomLogs]);
 
@@ -95,35 +100,37 @@ export default function InsightsScreen() {
   const maxSymptom = Math.max(...symptomCounts.map(([, count]) => count), 0);
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      key={`insights-${language}`}
+      className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8 pb-10">
         <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
-          Insights
+          {t('insights.title')}
         </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-          Your cycle stats update as you log more data.
+          {t('insights.subtitle')}
         </Text>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-sm uppercase tracking-wide text-muted dark:text-muted-dark">
-            Average cycle length
+            {t('insights.avgCycle')}
           </Text>
           <Text className="mt-2 text-3xl font-semibold text-foreground dark:text-foreground-dark">
-            {averageCycle ? `${averageCycle} days` : 'Log 2+ cycles'}
+            {averageCycle ? `${averageCycle} ${t('units.days')}` : t('insights.logTwo')}
           </Text>
           <Text className="mt-1 text-sm text-muted dark:text-muted-dark">
-            Log at least two periods to calculate this.
+            {t('insights.logTwoHint')}
           </Text>
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Cycle length trend
+            {t('insights.trend')}
           </Text>
           {cycleLengths.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              Log at least two periods to see trends.
+              {t('insights.trendHint')}
             </Text>
           ) : (
             <View className="mt-3 flex-row items-end gap-2">
@@ -146,11 +153,11 @@ export default function InsightsScreen() {
 
         <View className="mt-5 flex-row gap-4">
           <View className="flex-1 rounded-2xl bg-secondary p-4">
-            <Text className="text-sm text-foreground">Periods logged</Text>
+            <Text className="text-sm text-foreground">{t('insights.periodsLogged')}</Text>
             <Text className="mt-2 text-2xl font-semibold text-foreground">{periods.length}</Text>
           </View>
           <View className="flex-1 rounded-2xl bg-accent p-4">
-            <Text className="text-sm text-foreground">Symptom logs</Text>
+            <Text className="text-sm text-foreground">{t('insights.symptomLogs')}</Text>
             <Text className="mt-2 text-2xl font-semibold text-foreground">
               {symptomLogs.length}
             </Text>
@@ -159,26 +166,26 @@ export default function InsightsScreen() {
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Most common symptoms
+            {t('insights.commonSymptoms')}
           </Text>
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            {mostCommonSymptom ?? 'Log symptoms to see patterns.'}
+            {mostCommonSymptom ? localizeSymptomKey(mostCommonSymptom) : t('insights.logSymptoms')}
           </Text>
           <Text className="mt-4 text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Most common mood
+            {t('insights.commonMood')}
           </Text>
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            {mostCommonMood ?? 'No moods logged yet.'}
+            {mostCommonMood ? localizeMoodKey(mostCommonMood) : t('insights.noMoods')}
           </Text>
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Symptom frequency
+            {t('insights.frequency')}
           </Text>
           {symptomCounts.length === 0 ? (
             <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-              Log symptoms to see frequency.
+              {t('insights.frequencyHint')}
             </Text>
           ) : (
             <View className="mt-3 gap-3">
@@ -186,7 +193,7 @@ export default function InsightsScreen() {
                 <View key={label}>
                   <View className="flex-row items-center justify-between">
                     <Text className="text-xs text-foreground dark:text-foreground-dark">
-                      {label}
+                      {localizeSymptomKey(label)}
                     </Text>
                     <Text className="text-xs text-muted dark:text-muted-dark">{count}</Text>
                   </View>

@@ -14,6 +14,7 @@ export type AppSettings = {
   periodLengthDays: number;
   lastPeriodStartDate: string | null;
   onboarded: boolean;
+  languageCode: 'en' | 'de' | 'tr';
 };
 
 export const defaultSettings: AppSettings = {
@@ -28,6 +29,7 @@ export const defaultSettings: AppSettings = {
   periodLengthDays: 5,
   lastPeriodStartDate: null,
   onboarded: false,
+  languageCode: 'en',
 };
 
 export async function loadSettings(): Promise<AppSettings> {

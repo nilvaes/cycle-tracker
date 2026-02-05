@@ -8,8 +8,11 @@ import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { loadSettings, saveSettings } from '@/lib/storage';
 import { schedulePeriodReminder } from '@/lib/reminders';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
 
 export default function LogPeriodScreen() {
+  const { language } = useLanguage();
   const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -21,7 +24,7 @@ export default function LogPeriodScreen() {
   const [loadedEdit, setLoadedEdit] = useState(false);
 
   const formatDisplayDate = (date: Date | null) => {
-    if (!date) return 'Select date';
+    if (!date) return t('log.selectDate');
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
@@ -76,7 +79,7 @@ export default function LogPeriodScreen() {
     setError(null);
 
     if (endDate && endDate < startDate) {
-      setError('End date cannot be before start date.');
+      setError(t('alerts.endDateError'));
       return;
     }
 
@@ -105,17 +108,22 @@ export default function LogPeriodScreen() {
       next.periodReminderNotificationId = reminderId;
       await saveSettings(next);
       emitDataChanged();
-      Alert.alert('Saved', editId ? 'Your period was updated.' : 'Your period has been logged.');
+      Alert.alert(
+        t('alerts.savedTitle'),
+        editId ? t('alerts.periodUpdated') : t('alerts.periodLogged'),
+      );
       router.back();
     } catch (e) {
-      setError('Could not save. Try again.');
+      setError(t('alerts.saveError'));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      key={`log-${language}`}
+      className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8">
           <Pressable
@@ -124,14 +132,14 @@ export default function LogPeriodScreen() {
             <IconSymbol size={20} name="chevron.left" color="#6B6561" />
           </Pressable>
           <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
-            {editId ? 'Edit period' : 'Add period'}
+            {editId ? t('log.editPeriod') : t('log.addPeriod')}
           </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-          Add your period details. Dates use DD/MM/YYYY.
+          {t('log.periodHint')}
         </Text>
 
         <View className="mt-6 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Start date</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.startDate')}</Text>
           <Pressable onPress={() => setShowStartPicker((prev) => !prev)}>
             <Text className="mt-2 text-lg text-foreground dark:text-foreground-dark">
               {formatDisplayDate(startDate)}
@@ -148,7 +156,7 @@ export default function LogPeriodScreen() {
         ) : null}
 
         <View className="mt-4 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">End date (optional)</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.endDate')}</Text>
           <Pressable onPress={() => setShowEndPicker((prev) => !prev)}>
             <Text className="mt-2 text-lg text-foreground dark:text-foreground-dark">
               {formatDisplayDate(endDate)}
@@ -165,7 +173,7 @@ export default function LogPeriodScreen() {
         ) : null}
 
         <View className="mt-4 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Flow intensity</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.flow')}</Text>
           <View className="mt-3 flex-row gap-2">
             {(['light', 'medium', 'heavy'] as FlowIntensity[]).map((level) => {
               const selected = flow === level;
@@ -179,7 +187,7 @@ export default function LogPeriodScreen() {
                       : 'rounded-full border border-border dark:border-border-dark px-4 py-2'
                   }>
                   <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-                    {level}
+                    {t(`log.${level}`)}
                   </Text>
                 </Pressable>
               );
@@ -196,7 +204,7 @@ export default function LogPeriodScreen() {
             className="rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => router.back()}>
             <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-              Cancel
+              {t('log.cancel')}
             </Text>
           </Pressable>
           <Pressable
@@ -204,7 +212,7 @@ export default function LogPeriodScreen() {
             onPress={handleSave}
             disabled={saving}>
             <Text className="text-sm font-semibold text-primary">
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('log.saving') : t('log.save')}
             </Text>
           </Pressable>
         </View>

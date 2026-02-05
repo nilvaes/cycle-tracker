@@ -7,6 +7,8 @@ import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initDb } from '@/lib/db';
+import { LanguageProvider } from '@/lib/language';
+import { t } from '@/lib/i18n';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -20,15 +22,17 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="log" options={{ headerShown: false }} />
-        <Stack.Screen name="note" options={{ headerShown: false }} />
-        <Stack.Screen name="symptoms" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="log" options={{ headerShown: false }} />
+          <Stack.Screen name="note" options={{ headerShown: false }} />
+          <Stack.Screen name="symptoms" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: t('modal.title') }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }

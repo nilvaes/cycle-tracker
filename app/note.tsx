@@ -6,8 +6,11 @@ import { useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { createNote, getNoteById, updateNote } from '@/lib/notes';
 import { emitDataChanged } from '@/lib/events';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
 
 export default function NoteScreen() {
+  const { language } = useLanguage();
   const { editId, date } = useLocalSearchParams<{ editId?: string; date?: string }>();
   const [logDate, setLogDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -60,7 +63,7 @@ export default function NoteScreen() {
 
   const handleSave = async () => {
     if (!text.trim()) {
-      Alert.alert('Note is empty', 'Please write something first.');
+      Alert.alert(t('alerts.noteEmptyTitle'), t('alerts.noteEmptyBody'));
       return;
     }
     setSaving(true);
@@ -71,7 +74,10 @@ export default function NoteScreen() {
         await createNote({ logDate: formatIsoDate(logDate), text: text.trim() });
       }
       emitDataChanged();
-      Alert.alert('Saved', editId ? 'Your note was updated.' : 'Your note has been logged.');
+      Alert.alert(
+        t('alerts.savedTitle'),
+        editId ? t('alerts.noteUpdated') : t('alerts.noteLogged'),
+      );
       router.back();
     } finally {
       setSaving(false);
@@ -79,7 +85,9 @@ export default function NoteScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      key={`note-${language}`}
+      className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8">
           <Pressable
@@ -88,14 +96,14 @@ export default function NoteScreen() {
             <IconSymbol size={20} name="chevron.left" color="#6B6561" />
           </Pressable>
           <Text className="text-2xl font-semibold text-foreground dark:text-foreground-dark">
-            {editId ? 'Edit note' : 'Add note'}
+            {editId ? t('log.editNote') : t('log.addNote')}
           </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-          Save a quick daily note.
+          {t('log.noteHint')}
         </Text>
 
         <View className="mt-6 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Log date</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.logDate')}</Text>
           <Pressable onPress={() => setShowDatePicker(true)}>
             <Text className="mt-2 text-lg text-foreground dark:text-foreground-dark">
               {formatDisplayDate(logDate)}
@@ -112,11 +120,11 @@ export default function NoteScreen() {
         ) : null}
 
         <View className="mt-4 rounded-2xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Text className="text-sm text-muted dark:text-muted-dark">Note</Text>
+          <Text className="text-sm text-muted dark:text-muted-dark">{t('log.notes')}</Text>
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder="Write something about today..."
+            placeholder={t('log.placeholderNote')}
             placeholderTextColor="#5B5B5B"
             className="mt-2 text-base text-foreground dark:text-foreground-dark"
             multiline
@@ -128,7 +136,7 @@ export default function NoteScreen() {
             className="rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => router.back()}>
             <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-              Cancel
+              {t('log.cancel')}
             </Text>
           </Pressable>
           <Pressable
@@ -136,7 +144,7 @@ export default function NoteScreen() {
             onPress={handleSave}
             disabled={saving}>
             <Text className="text-sm font-semibold text-primary">
-              {saving ? 'Saving...' : 'Save'}
+              {saving ? t('log.saving') : t('log.save')}
             </Text>
           </Pressable>
         </View>

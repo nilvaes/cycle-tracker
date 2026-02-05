@@ -13,11 +13,14 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { Platform } from 'react-native';
 import { scheduleBirthControlReminder, schedulePeriodReminder } from '@/lib/reminders';
 import * as Notifications from 'expo-notifications';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/lib/language';
 import * as DocumentPicker from 'expo-document-picker';
 import { importPeriods } from '@/lib/periods';
 import { importSymptomLogs } from '@/lib/symptoms';
 
 export default function SettingsScreen() {
+  const { language, setLanguage } = useLanguage();
   const [birthEnabled, setBirthEnabled] = useState(false);
   const [birthTime, setBirthTime] = useState({ hour: 9, minute: 0 });
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -43,7 +46,7 @@ export default function SettingsScreen() {
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri);
     } else {
-      Alert.alert('Export saved', `File saved to: ${fileUri}`);
+      Alert.alert(t('alerts.exportSavedTitle'), t('alerts.exportSavedBody', { path: fileUri }));
     }
   };
 
@@ -113,20 +116,20 @@ export default function SettingsScreen() {
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri);
     } else {
-      Alert.alert('Export saved', `File saved to: ${fileUri}`);
+      Alert.alert(t('alerts.exportSavedTitle'), t('alerts.exportSavedBody', { path: fileUri }));
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert('Delete all data?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.deleteAllTitle'), t('alerts.deleteAllBody'), [
+      { text: t('actions.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('actions.delete'),
         style: 'destructive',
         onPress: async () => {
           await deleteAllData();
           emitDataChanged();
-          Alert.alert('Deleted', 'All local data has been removed.');
+          Alert.alert(t('alerts.deletedTitle'), t('alerts.deletedBody'));
         },
       },
     ]);
@@ -144,7 +147,7 @@ export default function SettingsScreen() {
 
     const doImport = async () => {
       if (file.name?.endsWith('.csv')) {
-        Alert.alert('CSV not supported yet', 'Please import the JSON export for now.');
+        Alert.alert(t('alerts.csvNotSupportedTitle'), t('alerts.csvNotSupportedBody'));
         return;
       }
       const data = JSON.parse(content) as {
@@ -177,13 +180,13 @@ export default function SettingsScreen() {
         })),
       );
       emitDataChanged();
-      Alert.alert('Import complete', 'Your data has been restored.');
+      Alert.alert(t('alerts.importCompleteTitle'), t('alerts.importCompleteBody'));
     };
 
-    Alert.alert('Import data', 'Replace your existing data or merge?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('alerts.importTitle'), t('alerts.importBody'), [
+      { text: t('actions.cancel'), style: 'cancel' },
       {
-        text: 'Replace',
+        text: t('actions.replace'),
         style: 'destructive',
         onPress: async () => {
           await deleteAllData();
@@ -191,7 +194,7 @@ export default function SettingsScreen() {
         },
       },
       {
-        text: 'Merge',
+        text: t('actions.merge'),
         onPress: async () => {
           await doImport();
         },
@@ -283,69 +286,73 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background dark:bg-background-dark">
+    <SafeAreaView
+      key={`settings-${language}`}
+      className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8 pb-10">
         <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
-          Settings
+          {t('settings.title')}
         </Text>
         <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-          Manage your data and privacy controls.
+          {t('settings.subtitle')}
         </Text>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Data controls
+            {t('settings.dataControls')}
           </Text>
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            Your data is stored locally only.
+            {t('settings.dataLocal')}
           </Text>
           <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
-            Use JSON export for restore. CSV is for viewing only.
+            {t('settings.dataNote')}
           </Text>
 
           <Pressable
             className="mt-4 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={handleExport}>
-            <Text className="text-sm font-semibold text-primary">Export JSON</Text>
+            <Text className="text-sm font-semibold text-primary">{t('settings.exportJson')}</Text>
           </Pressable>
           <Pressable
             className="mt-3 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={handleExportCsv}>
-            <Text className="text-sm font-semibold text-primary">Export CSV</Text>
+            <Text className="text-sm font-semibold text-primary">{t('settings.exportCsv')}</Text>
           </Pressable>
           <Pressable
             className="mt-3 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={handleImport}>
-            <Text className="text-sm font-semibold text-primary">Import JSON</Text>
+            <Text className="text-sm font-semibold text-primary">{t('settings.importJson')}</Text>
           </Pressable>
 
           <Pressable
             className="mt-3 rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
             onPress={handleDelete}>
             <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-              Delete all data
+              {t('settings.deleteAll')}
             </Text>
           </Pressable>
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Reminders
+            {t('settings.reminders')}
           </Text>
           <View className="mt-3">
             <Text className="text-sm text-foreground dark:text-foreground-dark">
-              Period reminder
+              {t('settings.periodReminder')}
             </Text>
             <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
-              Remind me a few days before my period starts.
+              {t('settings.periodReminderHint')}
             </Text>
             <View className="mt-2 self-start">
               <Switch value={periodEnabled} onValueChange={handleTogglePeriod} />
             </View>
           </View>
           <View className="mt-3 flex-row items-center justify-between">
-            <Text className="text-xs text-muted dark:text-muted-dark">Lead time</Text>
+            <Text className="text-xs text-muted dark:text-muted-dark">
+              {t('settings.leadTime')}
+            </Text>
             <View className="flex-row items-center gap-3">
               <Pressable
                 className="rounded-none border border-border dark:border-border-dark px-3 py-1 active:opacity-80"
@@ -353,7 +360,7 @@ export default function SettingsScreen() {
                 <Text className="text-xs text-foreground dark:text-foreground-dark">-</Text>
               </Pressable>
               <Text className="text-xs text-foreground dark:text-foreground-dark">
-                {periodLeadDays} days
+                {t('settings.leadDays', { days: periodLeadDays })}
               </Text>
               <Pressable
                 className="rounded-none border border-border dark:border-border-dark px-3 py-1 active:opacity-80"
@@ -366,8 +373,9 @@ export default function SettingsScreen() {
             className="mt-3 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => setShowPeriodTimePicker((prev) => !prev)}>
             <Text className="text-sm font-semibold text-primary">
-              Reminder time: {String(periodTime.hour).padStart(2, '0')}:
-              {String(periodTime.minute).padStart(2, '0')}
+              {t('settings.reminderTime', {
+                time: `${String(periodTime.hour).padStart(2, '0')}:${String(periodTime.minute).padStart(2, '0')}`,
+              })}
             </Text>
           </Pressable>
           {showPeriodTimePicker ? (
@@ -381,10 +389,10 @@ export default function SettingsScreen() {
           <View className="mt-4 h-px w-full bg-border dark:bg-border-dark" />
           <View className="mt-4">
             <Text className="text-sm text-foreground dark:text-foreground-dark">
-              Birth control reminder
+              {t('settings.birthReminder')}
             </Text>
             <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
-              Turn on to receive a daily reminder.
+              {t('settings.birthReminderHint')}
             </Text>
             <View className="mt-2 self-start">
               <Switch value={birthEnabled} onValueChange={handleToggleBirth} />
@@ -394,8 +402,9 @@ export default function SettingsScreen() {
             className="mt-4 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
             onPress={() => setShowTimePicker((prev) => !prev)}>
             <Text className="text-sm font-semibold text-primary">
-              Reminder time: {String(birthTime.hour).padStart(2, '0')}:
-              {String(birthTime.minute).padStart(2, '0')}
+              {t('settings.reminderTime', {
+                time: `${String(birthTime.hour).padStart(2, '0')}:${String(birthTime.minute).padStart(2, '0')}`,
+              })}
             </Text>
           </Pressable>
           {showTimePicker ? (
@@ -420,20 +429,52 @@ export default function SettingsScreen() {
               });
               setBirthEnabled(false);
               setPeriodEnabled(false);
-              Alert.alert('Cleared', 'All reminders have been cleared.');
+              Alert.alert(t('alerts.clearedTitle'), t('alerts.clearedBody'));
             }}>
             <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
-              Clear all reminders
+              {t('settings.clearAll')}
             </Text>
           </Pressable>
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-            Privacy
+            {t('settings.language')}
+          </Text>
+          <View className="mt-3 flex-row flex-wrap gap-3">
+            {([
+              { code: 'en', label: 'English', flag: '🇬🇧' },
+              { code: 'de', label: 'Deutsch', flag: '🇩🇪' },
+              { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
+            ] as const).map((item) => {
+              const selected = language === item.code;
+              return (
+                <Pressable
+                  key={item.code}
+                  className={`rounded-none border px-4 py-3 active:scale-95 active:opacity-80 ${
+                    selected
+                      ? 'border-primary bg-accent dark:bg-accent-dark'
+                      : 'border-border dark:border-border-dark'
+                  }`}
+                  onPress={() => setLanguage(item.code)}>
+                  <View className="flex-row items-center gap-2">
+                    <Text className="text-base">{item.flag}</Text>
+                    <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
+                      {item.label}
+                    </Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
+          <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
+            {t('settings.privacy')}
           </Text>
           <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-            No accounts, no tracking, no analytics.
+            {t('settings.privacyText')}
           </Text>
         </View>
 
