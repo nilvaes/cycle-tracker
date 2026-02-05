@@ -173,7 +173,14 @@ export default function SymptomsScreen() {
                       ? 'rounded-full bg-primary px-4 py-2'
                       : 'rounded-full border border-border dark:border-border-dark px-4 py-2'
                   }>
-                  <Text className="text-sm text-foreground dark:text-foreground-dark">{label}</Text>
+                  <Text
+                    className={
+                      selected
+                        ? 'text-sm font-semibold text-surface dark:text-background-dark'
+                        : 'text-sm text-foreground dark:text-foreground-dark'
+                    }>
+                    {label}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -194,7 +201,14 @@ export default function SymptomsScreen() {
                       ? 'rounded-full bg-secondary px-4 py-2'
                       : 'rounded-full border border-border dark:border-border-dark px-4 py-2'
                   }>
-                  <Text className="text-sm text-foreground dark:text-foreground-dark">{label}</Text>
+                  <Text
+                    className={
+                      selected
+                        ? 'text-sm font-semibold text-foreground'
+                        : 'text-sm text-foreground dark:text-foreground-dark'
+                    }>
+                    {label}
+                  </Text>
                 </Pressable>
               );
             })}

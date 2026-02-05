@@ -256,30 +256,20 @@ export default function HomeScreen() {
                   })
                 : ''}
             </Text>
-            <View className=" flex-row gap-3">
-              <Pressable
-                className="rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
-                onPress={
-                  latestPeriod && !latestPeriod.endDate
-                    ? handleEndPeriod
-                    : () => router.push('/log')
-                }
-              >
-                <Text className="text-sm font-semibold text-primary">
-                  {latestPeriod && !latestPeriod.endDate
-                    ? t('home.endPeriod')
-                    : t('home.addPeriod')}
-                </Text>
-              </Pressable>
-              <Pressable
-                className="rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
-                onPress={() => router.push('/note')}
-              >
-                <Text className="text-sm font-semibold text-primary">
-                  {t('home.addNote')}
-                </Text>
-              </Pressable>
-            </View>
+            <Pressable
+              className="mt-2 w-full rounded-none border-2 border-primary/70 bg-primary/10 dark:border-primary-dark/80 dark:bg-primary-dark/20 px-6 py-4 active:scale-95 active:opacity-80"
+              onPress={
+                latestPeriod && !latestPeriod.endDate
+                  ? handleEndPeriod
+                  : () => router.push('/log')
+              }
+            >
+              <Text className="text-base font-semibold text-primary dark:text-primary-dark">
+                {latestPeriod && !latestPeriod.endDate
+                  ? t('home.endPeriod')
+                  : t('home.addPeriod')}
+              </Text>
+            </Pressable>
           </View>
 
           <View className="mb-4 flex-row gap-4">
@@ -324,6 +314,14 @@ export default function HomeScreen() {
             >
               <Text className="text-sm font-semibold text-primary">
                 {t('home.addSymptoms')}
+              </Text>
+            </Pressable>
+            <Pressable
+              className="mt-3 rounded-none border border-primary px-5 py-3 active:scale-95 active:opacity-80"
+              onPress={() => router.push('/note')}
+            >
+              <Text className="text-sm font-semibold text-primary">
+                {t('home.addNote')}
               </Text>
             </Pressable>
           </View>
