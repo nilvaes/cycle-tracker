@@ -9,6 +9,8 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initDb } from '@/lib/db';
 import { LanguageProvider } from '@/lib/language';
 import { t } from '@/lib/i18n';
+import { loadSettings, saveSettings } from '@/lib/storage';
+import { scheduleBirthControlReminder, schedulePeriodReminder } from '@/lib/reminders';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -18,7 +20,23 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    initDb();
+    const bootstrap = async () => {
+      await initDb();
+      const current = await loadSettings();
+      const birthId = await scheduleBirthControlReminder(current);
+      const next = { ...current, birthControlNotificationId: birthId };
+      const periodId = await schedulePeriodReminder(next);
+      const finalSettings = { ...next, periodReminderNotificationId: periodId };
+      if (
+        finalSettings.birthControlNotificationId !== current.birthControlNotificationId ||
+        finalSettings.periodReminderNotificationId !== current.periodReminderNotificationId
+      ) {
+        await saveSettings(finalSettings);
+      }
+    };
+    bootstrap().catch((error) => {
+      console.warn('Reminder bootstrap failed', error);
+    });
   }, []);
 
   return (

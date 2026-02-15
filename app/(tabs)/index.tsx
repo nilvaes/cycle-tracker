@@ -6,12 +6,14 @@ import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { DailyNote, deleteNote, listNotes } from '@/lib/notes';
 import { localizeOptionList } from '@/lib/options';
+import { schedulePeriodReminder } from '@/lib/reminders';
 import {
   deletePeriod,
   listPeriods,
   PeriodEntry,
   updatePeriod,
 } from '@/lib/periods';
+import { loadSettings, saveSettings } from '@/lib/storage';
 import { deleteSymptomLog, listSymptomLogs, SymptomLog } from '@/lib/symptoms';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -187,6 +189,12 @@ export default function HomeScreen() {
             startDate: latestPeriod.startDate,
             endDate: iso,
             flowIntensity: latestPeriod.flowIntensity,
+          });
+          const current = await loadSettings();
+          const reminderId = await schedulePeriodReminder(current);
+          await saveSettings({
+            ...current,
+            periodReminderNotificationId: reminderId,
           });
           load();
         },

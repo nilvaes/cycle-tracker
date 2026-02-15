@@ -17,6 +17,14 @@ function daysBetween(startIso: string, endIso: string) {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
+async function ensureNotificationPermission() {
+  const existing = await Notifications.getPermissionsAsync();
+  if (existing.status === 'granted') return true;
+  if (existing.status === 'denied') return false;
+  const requested = await Notifications.requestPermissionsAsync();
+  return requested.status === 'granted';
+}
+
 export async function scheduleBirthControlReminder(
   settings: AppSettings,
 ): Promise<string | null> {
@@ -29,8 +37,8 @@ export async function scheduleBirthControlReminder(
     return null;
   }
 
-  const permission = await Notifications.requestPermissionsAsync();
-  if (permission.status !== 'granted') return null;
+  const allowed = await ensureNotificationPermission();
+  if (!allowed) return null;
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('reminders', {
@@ -71,8 +79,8 @@ export async function schedulePeriodReminder(settings: AppSettings): Promise<str
     return null;
   }
 
-  const permission = await Notifications.requestPermissionsAsync();
-  if (permission.status !== 'granted') return null;
+  const allowed = await ensureNotificationPermission();
+  if (!allowed) return null;
 
   const periods = await listPeriods();
   const avgCycleDays =

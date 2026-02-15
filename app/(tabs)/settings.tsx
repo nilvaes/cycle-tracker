@@ -1,23 +1,20 @@
-import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { listPeriods } from '@/lib/periods';
-import { listSymptomLogs } from '@/lib/symptoms';
+import { importPeriods, listPeriods } from '@/lib/periods';
+import { importSymptomLogs, listSymptomLogs } from '@/lib/symptoms';
 import { deleteAllData } from '@/lib/db';
 import { emitDataChanged } from '@/lib/events';
 import { importNotes, listNotes } from '@/lib/notes';
 import { loadSettings, saveSettings } from '@/lib/storage';
 import { useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Platform } from 'react-native';
 import { scheduleBirthControlReminder, schedulePeriodReminder } from '@/lib/reminders';
 import * as Notifications from 'expo-notifications';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import * as DocumentPicker from 'expo-document-picker';
-import { importPeriods } from '@/lib/periods';
-import { importSymptomLogs } from '@/lib/symptoms';
 
 export default function SettingsScreen() {
   const { language, setLanguage } = useLanguage();
@@ -28,6 +25,46 @@ export default function SettingsScreen() {
   const [periodLeadDays, setPeriodLeadDays] = useState(2);
   const [periodTime, setPeriodTime] = useState({ hour: 9, minute: 0 });
   const [showPeriodTimePicker, setShowPeriodTimePicker] = useState(false);
+  const [debugLines, setDebugLines] = useState<string[]>([]);
+
+  const reconcileReminderSchedules = async () => {
+    const current = await loadSettings();
+    const birthId = await scheduleBirthControlReminder(current);
+    const withBirth = { ...current, birthControlNotificationId: birthId };
+    const periodId = await schedulePeriodReminder(withBirth);
+    const finalSettings = { ...withBirth, periodReminderNotificationId: periodId };
+    await saveSettings(finalSettings);
+    setBirthEnabled(finalSettings.birthControlEnabled);
+    setPeriodEnabled(finalSettings.periodReminderEnabled);
+    await refreshReminderDebug();
+  };
+
+  const refreshReminderDebug = async () => {
+    const [settings, scheduled] = await Promise.all([
+      loadSettings(),
+      Notifications.getAllScheduledNotificationsAsync(),
+    ]);
+
+    const findById = (id: string | null) => {
+      if (!id) return null;
+      return scheduled.find((item) => item.identifier === id) ?? null;
+    };
+
+    const birth = findById(settings.birthControlNotificationId);
+    const period = findById(settings.periodReminderNotificationId);
+
+    setDebugLines([
+      `Scheduled total: ${scheduled.length}`,
+      `Birth enabled: ${settings.birthControlEnabled ? 'yes' : 'no'}`,
+      `Birth id: ${settings.birthControlNotificationId ?? 'none'}`,
+      `Birth scheduled: ${birth ? 'yes' : 'no'}`,
+      `Birth trigger: ${birth ? JSON.stringify(birth.trigger) : 'none'}`,
+      `Period enabled: ${settings.periodReminderEnabled ? 'yes' : 'no'}`,
+      `Period id: ${settings.periodReminderNotificationId ?? 'none'}`,
+      `Period scheduled: ${period ? 'yes' : 'no'}`,
+      `Period trigger: ${period ? JSON.stringify(period.trigger) : 'none'}`,
+    ]);
+  };
   const handleExport = async () => {
     const [periods, symptoms, notes] = await Promise.all([
       listPeriods(),
@@ -127,8 +164,21 @@ export default function SettingsScreen() {
         text: t('actions.delete'),
         style: 'destructive',
         onPress: async () => {
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          const current = await loadSettings();
+          await saveSettings({
+            ...current,
+            birthControlEnabled: false,
+            periodReminderEnabled: false,
+            birthControlNotificationId: null,
+            periodReminderNotificationId: null,
+            lastPeriodStartDate: null,
+          });
+          setBirthEnabled(false);
+          setPeriodEnabled(false);
           await deleteAllData();
           emitDataChanged();
+          await refreshReminderDebug();
           Alert.alert(t('alerts.deletedTitle'), t('alerts.deletedBody'));
         },
       },
@@ -151,9 +201,9 @@ export default function SettingsScreen() {
         return;
       }
       const data = JSON.parse(content) as {
-        periods?: Array<any>;
-        symptoms?: Array<any>;
-        notes?: Array<any>;
+        periods?: any[];
+        symptoms?: any[];
+        notes?: any[];
       };
       await importPeriods(
         (data.periods ?? []).map((p) => ({
@@ -180,6 +230,7 @@ export default function SettingsScreen() {
         })),
       );
       emitDataChanged();
+      await reconcileReminderSchedules();
       Alert.alert(t('alerts.importCompleteTitle'), t('alerts.importCompleteBody'));
     };
 
@@ -209,6 +260,7 @@ export default function SettingsScreen() {
       setPeriodEnabled(settings.periodReminderEnabled);
       setPeriodLeadDays(settings.periodReminderLeadDays);
       setPeriodTime(settings.periodReminderTime);
+      refreshReminderDebug();
     });
   }, []);
 
@@ -219,6 +271,7 @@ export default function SettingsScreen() {
     const id = await scheduleBirthControlReminder(next);
     next.birthControlNotificationId = id;
     await saveSettings(next);
+    await refreshReminderDebug();
   };
 
   const onChangeTime = async (_event: DateTimePickerEvent, selected?: Date) => {
@@ -231,6 +284,7 @@ export default function SettingsScreen() {
     const id = await scheduleBirthControlReminder(next);
     next.birthControlNotificationId = id;
     await saveSettings(next);
+    await refreshReminderDebug();
   };
 
   const handleTogglePeriod = async (value: boolean) => {
@@ -245,6 +299,10 @@ export default function SettingsScreen() {
     const id = await schedulePeriodReminder(next);
     next.periodReminderNotificationId = id;
     await saveSettings(next);
+    if (value && !id) {
+      Alert.alert(t('alerts.periodPendingTitle'), t('alerts.periodPendingBody'));
+    }
+    await refreshReminderDebug();
   };
 
   const handleLeadChange = async (delta: number) => {
@@ -263,6 +321,7 @@ export default function SettingsScreen() {
       next.periodReminderNotificationId = id;
       await saveSettings(next);
     }
+    await refreshReminderDebug();
   };
 
   const onChangePeriodTime = async (_event: DateTimePickerEvent, selected?: Date) => {
@@ -283,6 +342,7 @@ export default function SettingsScreen() {
       next.periodReminderNotificationId = id;
       await saveSettings(next);
     }
+    await refreshReminderDebug();
   };
 
   return (
@@ -430,11 +490,34 @@ export default function SettingsScreen() {
               setBirthEnabled(false);
               setPeriodEnabled(false);
               Alert.alert(t('alerts.clearedTitle'), t('alerts.clearedBody'));
+              await refreshReminderDebug();
             }}>
             <Text className="text-sm font-semibold text-foreground dark:text-foreground-dark">
               {t('settings.clearAll')}
             </Text>
           </Pressable>
+        </View>
+
+        <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
+              Reminder debug
+            </Text>
+            <Pressable
+              className="rounded-none border border-border dark:border-border-dark px-3 py-1 active:opacity-80"
+              onPress={refreshReminderDebug}>
+              <Text className="text-xs text-foreground dark:text-foreground-dark">Refresh</Text>
+            </Pressable>
+          </View>
+          <View className="mt-3 gap-1">
+            {debugLines.map((line) => (
+              <Text
+                key={line}
+                className="text-xs text-muted dark:text-muted-dark">
+                {line}
+              </Text>
+            ))}
+          </View>
         </View>
 
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">

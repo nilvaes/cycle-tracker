@@ -175,6 +175,8 @@ export const i18n = new I18n({
       clearedBody: 'All reminders have been cleared.',
       quickAddTitle: 'Quick add',
       quickAddBody: 'Choose what to add for this day.',
+      periodPendingTitle: 'Period reminder pending',
+      periodPendingBody: 'Log at least one period start date first. The reminder will schedule after data is added.',
     },
     options: {
       symptoms: {
@@ -375,6 +377,8 @@ export const i18n = new I18n({
       clearedBody: 'Alle Erinnerungen wurden entfernt.',
       quickAddTitle: 'Schnell hinzufügen',
       quickAddBody: 'Wähle aus, was du hinzufügen möchtest.',
+      periodPendingTitle: 'Perioden-Erinnerung ausstehend',
+      periodPendingBody: 'Trage zuerst mindestens ein Startdatum ein. Die Erinnerung wird danach geplant.',
     },
     options: {
       symptoms: {
@@ -575,6 +579,8 @@ export const i18n = new I18n({
       clearedBody: 'Tüm hatırlatıcılar silindi.',
       quickAddTitle: 'Hızlı ekle',
       quickAddBody: 'Bu gün için ne eklemek istersin?',
+      periodPendingTitle: 'Dönem hatırlatıcısı beklemede',
+      periodPendingBody: 'Önce en az bir dönem başlangıç tarihi ekle. Veri eklendiğinde hatırlatıcı planlanır.',
     },
     options: {
       symptoms: {
