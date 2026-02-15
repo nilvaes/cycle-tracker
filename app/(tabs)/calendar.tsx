@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { listPeriods, listPeriodsByDate, PeriodEntry } from '@/lib/periods';
+import { deletePeriod, listPeriods, listPeriodsByDate, PeriodEntry } from '@/lib/periods';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { deleteSymptomLog, listSymptomLogsByDate, SymptomLog } from '@/lib/symptoms';
@@ -14,6 +14,8 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { localizeOptionList } from '@/lib/options';
+import { loadSettings, saveSettings } from '@/lib/storage';
+import { schedulePeriodReminder } from '@/lib/reminders';
 
 const calendarLocales = {
   en: {
@@ -258,6 +260,20 @@ export default function CalendarScreen() {
     loadDayDetails(selectedDate);
   }, [selectedDate, loadDayDetails]);
 
+  const reconcilePeriodReminder = async () => {
+    const remaining = await listPeriods();
+    const current = await loadSettings();
+    const next = {
+      ...current,
+      lastPeriodStartDate: remaining[0]?.startDate ?? null,
+    };
+    const reminderId = await schedulePeriodReminder(next);
+    await saveSettings({
+      ...next,
+      periodReminderNotificationId: reminderId,
+    });
+  };
+
   return (
     <SafeAreaView
       key={`calendar-${language}`}
@@ -357,11 +373,34 @@ export default function CalendarScreen() {
                     <Text className="text-xs text-muted dark:text-muted-dark capitalize">
                       {t(`log.${period.flowIntensity}`)}
                     </Text>
-                    <Pressable
-                      className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
-                      onPress={() => router.push(`/log?editId=${period.id}`)}>
-                      <IconSymbol size={16} name="pencil" color={palette.icon} />
-                    </Pressable>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+                        onPress={() => router.push(`/log?editId=${period.id}`)}>
+                        <IconSymbol size={16} name="pencil" color={palette.icon} />
+                      </Pressable>
+                      <Pressable
+                        className="h-7 w-7 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+                        onPress={() => {
+                          Alert.alert(t('alerts.deletePeriodTitle'), t('alerts.deletePeriodBody'), [
+                            { text: t('actions.cancel'), style: 'cancel' },
+                            {
+                              text: t('actions.delete'),
+                              style: 'destructive',
+                              onPress: async () => {
+                                await deletePeriod(period.id);
+                                await reconcilePeriodReminder();
+                                await load();
+                                if (selectedDate) {
+                                  await loadDayDetails(selectedDate);
+                                }
+                              },
+                            },
+                          ]);
+                        }}>
+                        <IconSymbol size={16} name="trash" color={palette.icon} />
+                      </Pressable>
+                    </View>
                   </View>
                 ))
               )}

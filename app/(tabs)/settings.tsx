@@ -1,20 +1,21 @@
-import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, DeviceEventEmitter, Platform, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { importPeriods, listPeriods } from '@/lib/periods';
 import { importSymptomLogs, listSymptomLogs } from '@/lib/symptoms';
 import { deleteAllData } from '@/lib/db';
-import { emitDataChanged } from '@/lib/events';
+import { DATA_CHANGED_EVENT, emitDataChanged } from '@/lib/events';
 import { importNotes, listNotes } from '@/lib/notes';
 import { loadSettings, saveSettings } from '@/lib/storage';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { scheduleBirthControlReminder, schedulePeriodReminder } from '@/lib/reminders';
 import * as Notifications from 'expo-notifications';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import * as DocumentPicker from 'expo-document-picker';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function SettingsScreen() {
   const { language, setLanguage } = useLanguage();
@@ -27,19 +28,7 @@ export default function SettingsScreen() {
   const [showPeriodTimePicker, setShowPeriodTimePicker] = useState(false);
   const [debugLines, setDebugLines] = useState<string[]>([]);
 
-  const reconcileReminderSchedules = async () => {
-    const current = await loadSettings();
-    const birthId = await scheduleBirthControlReminder(current);
-    const withBirth = { ...current, birthControlNotificationId: birthId };
-    const periodId = await schedulePeriodReminder(withBirth);
-    const finalSettings = { ...withBirth, periodReminderNotificationId: periodId };
-    await saveSettings(finalSettings);
-    setBirthEnabled(finalSettings.birthControlEnabled);
-    setPeriodEnabled(finalSettings.periodReminderEnabled);
-    await refreshReminderDebug();
-  };
-
-  const refreshReminderDebug = async () => {
+  const refreshReminderDebug = useCallback(async () => {
     const [settings, scheduled] = await Promise.all([
       loadSettings(),
       Notifications.getAllScheduledNotificationsAsync(),
@@ -52,19 +41,44 @@ export default function SettingsScreen() {
 
     const birth = findById(settings.birthControlNotificationId);
     const period = findById(settings.periodReminderNotificationId);
+    const yes = t('common.yes');
+    const no = t('common.no');
+    const none = t('common.none');
 
     setDebugLines([
-      `Scheduled total: ${scheduled.length}`,
-      `Birth enabled: ${settings.birthControlEnabled ? 'yes' : 'no'}`,
-      `Birth id: ${settings.birthControlNotificationId ?? 'none'}`,
-      `Birth scheduled: ${birth ? 'yes' : 'no'}`,
-      `Birth trigger: ${birth ? JSON.stringify(birth.trigger) : 'none'}`,
-      `Period enabled: ${settings.periodReminderEnabled ? 'yes' : 'no'}`,
-      `Period id: ${settings.periodReminderNotificationId ?? 'none'}`,
-      `Period scheduled: ${period ? 'yes' : 'no'}`,
-      `Period trigger: ${period ? JSON.stringify(period.trigger) : 'none'}`,
+      t('settings.debugScheduledTotal', { count: scheduled.length }),
+      t('settings.debugBirthEnabled', { value: settings.birthControlEnabled ? yes : no }),
+      t('settings.debugBirthId', { value: settings.birthControlNotificationId ?? none }),
+      t('settings.debugBirthScheduled', { value: birth ? yes : no }),
+      t('settings.debugBirthTrigger', { value: birth ? JSON.stringify(birth.trigger) : none }),
+      t('settings.debugPeriodEnabled', { value: settings.periodReminderEnabled ? yes : no }),
+      t('settings.debugPeriodId', { value: settings.periodReminderNotificationId ?? none }),
+      t('settings.debugPeriodScheduled', { value: period ? yes : no }),
+      t('settings.debugPeriodTrigger', { value: period ? JSON.stringify(period.trigger) : none }),
     ]);
-  };
+  }, []);
+
+  const refreshSettingsState = useCallback(async () => {
+    const settings = await loadSettings();
+    setBirthEnabled(settings.birthControlEnabled);
+    setBirthTime(settings.birthControlTime);
+    setPeriodEnabled(settings.periodReminderEnabled);
+    setPeriodLeadDays(settings.periodReminderLeadDays);
+    setPeriodTime(settings.periodReminderTime);
+    await refreshReminderDebug();
+  }, [refreshReminderDebug]);
+
+  const reconcileReminderSchedules = useCallback(async () => {
+    const current = await loadSettings();
+    const birthId = await scheduleBirthControlReminder(current);
+    const withBirth = { ...current, birthControlNotificationId: birthId };
+    const periodId = await schedulePeriodReminder(withBirth);
+    const finalSettings = { ...withBirth, periodReminderNotificationId: periodId };
+    await saveSettings(finalSettings);
+    setBirthEnabled(finalSettings.birthControlEnabled);
+    setPeriodEnabled(finalSettings.periodReminderEnabled);
+    await refreshReminderDebug();
+  }, [refreshReminderDebug]);
   const handleExport = async () => {
     const [periods, symptoms, notes] = await Promise.all([
       listPeriods(),
@@ -168,17 +182,13 @@ export default function SettingsScreen() {
           const current = await loadSettings();
           await saveSettings({
             ...current,
-            birthControlEnabled: false,
-            periodReminderEnabled: false,
             birthControlNotificationId: null,
             periodReminderNotificationId: null,
             lastPeriodStartDate: null,
           });
-          setBirthEnabled(false);
-          setPeriodEnabled(false);
           await deleteAllData();
           emitDataChanged();
-          await refreshReminderDebug();
+          await reconcileReminderSchedules();
           Alert.alert(t('alerts.deletedTitle'), t('alerts.deletedBody'));
         },
       },
@@ -254,15 +264,23 @@ export default function SettingsScreen() {
   };
 
   useEffect(() => {
-    loadSettings().then((settings) => {
-      setBirthEnabled(settings.birthControlEnabled);
-      setBirthTime(settings.birthControlTime);
-      setPeriodEnabled(settings.periodReminderEnabled);
-      setPeriodLeadDays(settings.periodReminderLeadDays);
-      setPeriodTime(settings.periodReminderTime);
-      refreshReminderDebug();
+    refreshSettingsState();
+  }, [refreshSettingsState]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshSettingsState();
+    }, [refreshSettingsState]),
+  );
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(DATA_CHANGED_EVENT, () => {
+      refreshSettingsState();
     });
-  }, []);
+    return () => {
+      sub.remove();
+    };
+  }, [refreshSettingsState]);
 
   const handleToggleBirth = async (value: boolean) => {
     setBirthEnabled(value);
@@ -501,12 +519,14 @@ export default function SettingsScreen() {
         <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">
           <View className="flex-row items-center justify-between">
             <Text className="text-lg font-semibold text-foreground dark:text-foreground-dark">
-              Reminder debug
+              {t('settings.reminderDebug')}
             </Text>
             <Pressable
               className="rounded-none border border-border dark:border-border-dark px-3 py-1 active:opacity-80"
               onPress={refreshReminderDebug}>
-              <Text className="text-xs text-foreground dark:text-foreground-dark">Refresh</Text>
+              <Text className="text-xs text-foreground dark:text-foreground-dark">
+                {t('settings.refresh')}
+              </Text>
             </Pressable>
           </View>
           <View className="mt-3 gap-1">
