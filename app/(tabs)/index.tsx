@@ -166,6 +166,17 @@ export default function HomeScreen() {
         style: 'destructive',
         onPress: async () => {
           await deletePeriod(id);
+          const remaining = await listPeriods();
+          const current = await loadSettings();
+          const next = {
+            ...current,
+            lastPeriodStartDate: remaining[0]?.startDate ?? null,
+          };
+          const reminderId = await schedulePeriodReminder(next);
+          await saveSettings({
+            ...next,
+            periodReminderNotificationId: reminderId,
+          });
           load();
         },
       },
