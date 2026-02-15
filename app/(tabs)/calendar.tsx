@@ -200,7 +200,8 @@ export default function CalendarScreen() {
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
   const predictionColor = colorScheme === 'dark' ? '#3A322A' : '#F1E8DA';
-  const fertileColor = colorScheme === 'dark' ? '#C8A96B' : '#B08A3D';
+  // Keep fertile window visually distinct from period gold and prediction beige.
+  const fertileColor = colorScheme === 'dark' ? '#6FA38B' : '#2F8F78';
 
   const formatDisplayDate = (isoDate: string) => {
     const [year, month, day] = isoDate.split('-');

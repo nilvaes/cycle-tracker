@@ -18,7 +18,13 @@ function TabLabel({
 }) {
   const { language } = useLanguage();
   return (
-    <Text key={`${labelKey}-${language}`} style={{ color, fontSize: 12 }}>
+    <Text
+      key={`${labelKey}-${language}`}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.72}
+      allowFontScaling={false}
+      style={{ color, fontSize: 12, textAlign: 'center', maxWidth: 84 }}>
       {t(labelKey)}
     </Text>
   );
