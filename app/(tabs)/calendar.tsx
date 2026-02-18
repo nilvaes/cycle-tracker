@@ -14,6 +14,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { localizeOptionList } from '@/lib/options';
+import { buildCyclePrediction } from '@/lib/predictions';
 import { loadSettings, saveSettings } from '@/lib/storage';
 import { schedulePeriodReminder } from '@/lib/reminders';
 
@@ -114,29 +115,14 @@ function buildMarkedDates(periods: PeriodEntry[], color: string, textColor: stri
 
 function addPrediction(
   marked: Record<string, any>,
-  periods: PeriodEntry[],
+  predictedStartIso: string | null,
   color: string,
   textColor: string,
 ) {
-  if (periods.length < 2) return marked;
-  const sorted = [...periods].sort((a, b) => (a.startDate > b.startDate ? 1 : -1));
-  const diffs: number[] = [];
-  for (let i = 1; i < sorted.length; i += 1) {
-    const start = new Date(sorted[i - 1].startDate);
-    const next = new Date(sorted[i].startDate);
-    diffs.push(
-      Math.round((next.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
-    );
-  }
-  const avg =
-    diffs.reduce((sum, value) => sum + value, 0) / Math.max(1, diffs.length);
-  const last = new Date(sorted[sorted.length - 1].startDate);
-  const predictedStart = new Date(last);
-  predictedStart.setDate(last.getDate() + Math.round(avg));
-
+  if (!predictedStartIso) return marked;
   for (let i = 0; i < 5; i += 1) {
-    const d = new Date(predictedStart);
-    d.setDate(predictedStart.getDate() + i);
+    const d = new Date(predictedStartIso);
+    d.setDate(d.getDate() + i);
     const iso = d.toISOString().slice(0, 10);
     if (!marked[iso]) {
       marked[iso] = { color, textColor };
@@ -147,34 +133,18 @@ function addPrediction(
 
 function addFertileWindow(
   marked: Record<string, any>,
-  periods: PeriodEntry[],
+  fertileStartIso: string | null,
+  fertileEndIso: string | null,
   fertileColor: string,
   textColor: string,
 ) {
-  if (periods.length < 2) return marked;
-  const sorted = [...periods].sort((a, b) => (a.startDate > b.startDate ? 1 : -1));
-  const diffs: number[] = [];
-  for (let i = 1; i < sorted.length; i += 1) {
-    const start = new Date(sorted[i - 1].startDate);
-    const next = new Date(sorted[i].startDate);
-    diffs.push(
-      Math.round((next.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)),
-    );
-  }
-  const avg =
-    diffs.reduce((sum, value) => sum + value, 0) / Math.max(1, diffs.length);
-  const last = new Date(sorted[sorted.length - 1].startDate);
-  const predictedStart = new Date(last);
-  predictedStart.setDate(last.getDate() + Math.round(avg));
-
-  const ovulation = new Date(predictedStart);
-  ovulation.setDate(predictedStart.getDate() - 14);
-  const fertileStart = new Date(ovulation);
-  fertileStart.setDate(ovulation.getDate() - 5);
-
-  for (let i = 0; i <= 5; i += 1) {
-    const d = new Date(fertileStart);
-    d.setDate(fertileStart.getDate() + i);
+  if (!fertileStartIso || !fertileEndIso) return marked;
+  const start = new Date(fertileStartIso);
+  const end = new Date(fertileEndIso);
+  const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  for (let i = 0; i <= days; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
     const iso = d.toISOString().slice(0, 10);
     if (marked[iso]) {
       marked[iso] = {
@@ -236,9 +206,16 @@ export default function CalendarScreen() {
   );
 
   const markedDates = useMemo(() => {
+    const prediction = buildCyclePrediction(periods.map((p) => p.startDate));
     const base = buildMarkedDates(periods, palette.primary, palette.text);
-    const predicted = addPrediction(base, periods, predictionColor, palette.text);
-    return addFertileWindow(predicted, periods, fertileColor, palette.text);
+    const predicted = addPrediction(base, prediction.nextPeriodStartIso, predictionColor, palette.text);
+    return addFertileWindow(
+      predicted,
+      prediction.fertileStartIso,
+      prediction.fertileEndIso,
+      fertileColor,
+      palette.text,
+    );
   }, [periods, palette.primary, palette.text, predictionColor, fertileColor]);
 
   const handleDayPress = (dateString: string) => {

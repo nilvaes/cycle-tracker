@@ -6,6 +6,7 @@ import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import { DailyNote, deleteNote, listNotes } from '@/lib/notes';
 import { localizeOptionList } from '@/lib/options';
+import { buildCyclePrediction, daysBetweenIso } from '@/lib/predictions';
 import { schedulePeriodReminder } from '@/lib/reminders';
 import {
   deletePeriod,
@@ -56,6 +57,7 @@ export default function HomeScreen() {
     min: number;
     max: number;
   } | null>(null);
+  const [cycleConfidence, setCycleConfidence] = useState<'low' | 'medium' | 'high' | null>(null);
   const [cycleDay, setCycleDay] = useState<number | null>(null);
   const [showAllPeriods, setShowAllPeriods] = useState(false);
   const [showAllSymptoms, setShowAllSymptoms] = useState(false);
@@ -65,13 +67,6 @@ export default function HomeScreen() {
     const [year, month, day] = isoDate.split('-');
     if (!year || !month || !day) return isoDate;
     return `${day}/${month}/${year}`;
-  };
-
-  const daysBetween = (startIso: string, endIso: string) => {
-    const start = new Date(startIso);
-    const end = new Date(endIso);
-    const ms = end.getTime() - start.getTime();
-    return Math.round(ms / (1000 * 60 * 60 * 24));
   };
 
   const load = useCallback(async () => {
@@ -87,38 +82,16 @@ export default function HomeScreen() {
     setAllNotes(notes);
     setRecentNotes(notes.slice(0, 2));
 
-    if (periods.length >= 2) {
-      const sorted = [...periods].sort((a, b) =>
-        a.startDate > b.startDate ? 1 : -1,
-      );
-      const diffs: number[] = [];
-      for (let i = 1; i < sorted.length; i += 1) {
-        diffs.push(daysBetween(sorted[i - 1].startDate, sorted[i].startDate));
-      }
-      const avg =
-        diffs.reduce((sum, v) => sum + v, 0) / Math.max(1, diffs.length);
-      const min = Math.min(...diffs);
-      const max = Math.max(...diffs);
-      setCycleAverage(Math.round(avg));
-      setCycleRange({ min, max });
-      const lastStart = new Date(sorted[sorted.length - 1].startDate);
-      const predicted = new Date(lastStart);
-      predicted.setDate(lastStart.getDate() + Math.round(avg));
-      const iso = predicted.toISOString().slice(0, 10);
-      setNextPeriodDate(iso);
-
-      const todayIso = new Date().toISOString().slice(0, 10);
-      setDaysUntilNext(daysBetween(todayIso, iso));
-    } else {
-      setNextPeriodDate(null);
-      setDaysUntilNext(null);
-      setCycleAverage(null);
-      setCycleRange(null);
-    }
+    const prediction = buildCyclePrediction(periods.map((p) => p.startDate));
+    setNextPeriodDate(prediction.nextPeriodStartIso);
+    setDaysUntilNext(prediction.daysUntilNext);
+    setCycleAverage(prediction.averageCycleDays);
+    setCycleRange(prediction.cycleRange);
+    setCycleConfidence(prediction.confidence);
 
     if (periods.length >= 1) {
       const todayIso = new Date().toISOString().slice(0, 10);
-      setCycleDay(daysBetween(periods[0].startDate, todayIso) + 1);
+      setCycleDay(daysBetweenIso(periods[0].startDate, todayIso) + 1);
     } else {
       setCycleDay(null);
     }
@@ -275,6 +248,21 @@ export default function HomeScreen() {
                   })
                 : ''}
             </Text>
+            {cycleConfidence ? (
+              <Text className="mt-2 text-xs text-muted dark:text-muted-dark">
+                {t('home.confidence')}:{' '}
+                {cycleConfidence === 'high'
+                  ? t('home.confidenceHigh')
+                  : cycleConfidence === 'medium'
+                    ? t('home.confidenceMedium')
+                    : t('home.confidenceLow')}
+              </Text>
+            ) : null}
+            {cycleConfidence ? (
+              <Text className="mt-1 text-[11px] text-muted dark:text-muted-dark">
+                {t('home.confidenceHint')}
+              </Text>
+            ) : null}
             <Pressable
               className="mt-2 w-full rounded-none border-2 border-primary/70 bg-primary/10 dark:border-primary-dark/80 dark:bg-primary-dark/20 px-6 py-4 active:scale-95 active:opacity-80"
               onPress={
