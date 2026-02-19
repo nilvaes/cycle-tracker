@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { getOptionKey } from './options';
 
 export type SymptomLog = {
   id: number;
@@ -17,16 +18,23 @@ export async function createSymptomLog(input: {
 }) {
   const db = await getDb();
   const createdAt = Date.now();
+  const symptoms = input.symptoms.map((value) => getOptionKey('symptom', value));
+  const moods = input.moods.map((value) => getOptionKey('mood', value));
   await db.runAsync(
     'INSERT INTO symptom_logs (log_date, symptoms, moods, notes, created_at) VALUES (?, ?, ?, ?, ?);',
     [
       input.logDate,
-      JSON.stringify(input.symptoms),
-      JSON.stringify(input.moods),
+      JSON.stringify(symptoms),
+      JSON.stringify(moods),
       input.notes ?? null,
       createdAt,
     ],
   );
+}
+
+function parseAndNormalize(raw: string, type: 'symptom' | 'mood') {
+  const parsed = JSON.parse(raw) as string[];
+  return parsed.map((value) => getOptionKey(type, value));
 }
 
 export async function listSymptomLogs() {
@@ -43,8 +51,8 @@ export async function listSymptomLogs() {
   return rows.map((row) => ({
     id: row.id,
     logDate: row.log_date,
-    symptoms: JSON.parse(row.symptoms) as string[],
-    moods: JSON.parse(row.moods) as string[],
+    symptoms: parseAndNormalize(row.symptoms, 'symptom'),
+    moods: parseAndNormalize(row.moods, 'mood'),
     notes: row.notes,
     createdAt: row.created_at,
   }));
@@ -64,8 +72,8 @@ export async function listSymptomLogsByDate(dateIso: string) {
   return rows.map((row) => ({
     id: row.id,
     logDate: row.log_date,
-    symptoms: JSON.parse(row.symptoms) as string[],
-    moods: JSON.parse(row.moods) as string[],
+    symptoms: parseAndNormalize(row.symptoms, 'symptom'),
+    moods: parseAndNormalize(row.moods, 'mood'),
     notes: row.notes,
     createdAt: row.created_at,
   }));
@@ -81,12 +89,14 @@ export async function importSymptomLogs(
 ) {
   const db = await getDb();
   for (const log of logs) {
+    const symptoms = log.symptoms.map((value) => getOptionKey('symptom', value));
+    const moods = log.moods.map((value) => getOptionKey('mood', value));
     await db.runAsync(
       'INSERT INTO symptom_logs (log_date, symptoms, moods, notes, created_at) VALUES (?, ?, ?, ?, ?);',
       [
         log.logDate,
-        JSON.stringify(log.symptoms),
-        JSON.stringify(log.moods),
+        JSON.stringify(symptoms),
+        JSON.stringify(moods),
         log.notes ?? null,
         log.createdAt,
       ],
@@ -109,8 +119,8 @@ export async function getSymptomLogById(id: number) {
   return {
     id: row.id,
     logDate: row.log_date,
-    symptoms: JSON.parse(row.symptoms) as string[],
-    moods: JSON.parse(row.moods) as string[],
+    symptoms: parseAndNormalize(row.symptoms, 'symptom'),
+    moods: parseAndNormalize(row.moods, 'mood'),
     notes: row.notes,
     createdAt: row.created_at,
   };
@@ -124,12 +134,14 @@ export async function updateSymptomLog(input: {
   notes?: string | null;
 }) {
   const db = await getDb();
+  const symptoms = input.symptoms.map((value) => getOptionKey('symptom', value));
+  const moods = input.moods.map((value) => getOptionKey('mood', value));
   await db.runAsync(
     'UPDATE symptom_logs SET log_date = ?, symptoms = ?, moods = ?, notes = ? WHERE id = ?;',
     [
       input.logDate,
-      JSON.stringify(input.symptoms),
-      JSON.stringify(input.moods),
+      JSON.stringify(symptoms),
+      JSON.stringify(moods),
       input.notes ?? null,
       input.id,
     ],

@@ -15,7 +15,7 @@ import { emitDataChanged } from '@/lib/events';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
-import { localizeOptionList } from '@/lib/options';
+import { localizeMoodKey, localizeSymptomKey, MOOD_OPTION_KEYS, SYMPTOM_OPTION_KEYS } from '@/lib/options';
 
 export default function SymptomsScreen() {
   const { language } = useLanguage();
@@ -27,20 +27,8 @@ export default function SymptomsScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [loadedEdit, setLoadedEdit] = useState(false);
 
-  const symptomOptions = [
-    t('options.symptoms.cramps'),
-    t('options.symptoms.headache'),
-    t('options.symptoms.bloating'),
-    t('options.symptoms.fatigue'),
-    t('options.symptoms.nausea'),
-  ];
-  const moodOptions = [
-    t('options.moods.calm'),
-    t('options.moods.lowEnergy'),
-    t('options.moods.irritable'),
-    t('options.moods.anxious'),
-    t('options.moods.happy'),
-  ];
+  const symptomOptions = [...SYMPTOM_OPTION_KEYS];
+  const moodOptions = [...MOOD_OPTION_KEYS];
 
   const toggleItem = (list: string[], value: string) =>
     list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
@@ -76,8 +64,8 @@ export default function SymptomsScreen() {
         if (log) {
           const parsed = parseIso(log.logDate);
           if (parsed) setLogDate(parsed);
-          setSelectedSymptoms(localizeOptionList('symptom', log.symptoms));
-          setSelectedMoods(localizeOptionList('mood', log.moods));
+          setSelectedSymptoms(log.symptoms);
+          setSelectedMoods(log.moods);
         }
         setLoadedEdit(true);
       });
@@ -88,11 +76,6 @@ export default function SymptomsScreen() {
       if (parsed) setLogDate(parsed);
     }
   }, [editId, loadedEdit, date]);
-
-  useEffect(() => {
-    setSelectedSymptoms((current) => localizeOptionList('symptom', current));
-    setSelectedMoods((current) => localizeOptionList('mood', current));
-  }, [language]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -179,7 +162,7 @@ export default function SymptomsScreen() {
                         ? 'text-sm font-semibold text-surface dark:text-background-dark'
                         : 'text-sm text-foreground dark:text-foreground-dark'
                     }>
-                    {label}
+                    {localizeSymptomKey(label)}
                   </Text>
                 </Pressable>
               );
@@ -207,7 +190,7 @@ export default function SymptomsScreen() {
                         ? 'text-sm font-semibold text-foreground'
                         : 'text-sm text-foreground dark:text-foreground-dark'
                     }>
-                    {label}
+                    {localizeMoodKey(label)}
                   </Text>
                 </Pressable>
               );

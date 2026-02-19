@@ -1,6 +1,22 @@
 import { t } from '@/lib/i18n';
 
-type OptionType = 'symptom' | 'mood';
+export type OptionType = 'symptom' | 'mood';
+
+export const SYMPTOM_OPTION_KEYS = [
+  'cramps',
+  'headache',
+  'bloating',
+  'fatigue',
+  'nausea',
+] as const;
+
+export const MOOD_OPTION_KEYS = [
+  'calm',
+  'lowEnergy',
+  'irritable',
+  'anxious',
+  'happy',
+] as const;
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
