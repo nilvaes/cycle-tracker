@@ -197,14 +197,6 @@ export default function CalendarScreen() {
     }, [load]),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (selectedDate) {
-        loadDayDetails(selectedDate);
-      }
-    }, [selectedDate, loadDayDetails]),
-  );
-
   const markedDates = useMemo(() => {
     const prediction = buildCyclePrediction(periods.map((p) => p.startDate));
     const base = buildMarkedDates(periods, palette.primary, palette.text);
@@ -237,6 +229,14 @@ export default function CalendarScreen() {
     if (!selectedDate) return;
     loadDayDetails(selectedDate);
   }, [selectedDate, loadDayDetails]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedDate) {
+        loadDayDetails(selectedDate);
+      }
+    }, [selectedDate, loadDayDetails]),
+  );
 
   const reconcilePeriodReminder = async () => {
     const remaining = await listPeriods();

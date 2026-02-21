@@ -114,7 +114,7 @@ export async function schedulePeriodReminder(settings: AppSettings): Promise<str
     reminderDate.setDate(reminderDate.getDate() + avgCycleDays);
   }
 
-  const trigger =
+  const trigger: Notifications.NotificationTriggerInput =
     Platform.OS === 'android'
       ? {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
