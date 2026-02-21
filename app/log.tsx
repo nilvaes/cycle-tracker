@@ -113,7 +113,7 @@ export default function LogPeriodScreen() {
         editId ? t('alerts.periodUpdated') : t('alerts.periodLogged'),
       );
       router.back();
-    } catch (e) {
+    } catch {
       setError(t('alerts.saveError'));
     } finally {
       setSaving(false);
