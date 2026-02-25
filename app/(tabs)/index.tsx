@@ -51,6 +51,10 @@ export default function HomeScreen() {
   const [recentNotes, setRecentNotes] = useState<DailyNote[]>([]);
   const [allNotes, setAllNotes] = useState<DailyNote[]>([]);
   const [nextPeriodDate, setNextPeriodDate] = useState<string | null>(null);
+  const [expectedWindow, setExpectedWindow] = useState<{
+    start: string;
+    end: string;
+  } | null>(null);
   const [daysUntilNext, setDaysUntilNext] = useState<number | null>(null);
   const [cycleAverage, setCycleAverage] = useState<number | null>(null);
   const [cycleRange, setCycleRange] = useState<{
@@ -84,6 +88,14 @@ export default function HomeScreen() {
 
     const prediction = buildCyclePrediction(periods.map((p) => p.startDate));
     setNextPeriodDate(prediction.nextPeriodStartIso);
+    if (prediction.expectedStartIso && prediction.expectedEndIso) {
+      setExpectedWindow({
+        start: prediction.expectedStartIso,
+        end: prediction.expectedEndIso,
+      });
+    } else {
+      setExpectedWindow(null);
+    }
     setDaysUntilNext(prediction.daysUntilNext);
     setCycleAverage(prediction.averageCycleDays);
     setCycleRange(prediction.cycleRange);
@@ -248,6 +260,14 @@ export default function HomeScreen() {
                   })
                 : ''}
             </Text>
+            {expectedWindow && expectedWindow.start !== expectedWindow.end ? (
+              <Text className="mt-1 text-xs text-muted dark:text-muted-dark">
+                {t('home.expectedBetween', {
+                  start: formatDisplayDate(expectedWindow.start),
+                  end: formatDisplayDate(expectedWindow.end),
+                })}
+              </Text>
+            ) : null}
             {cycleConfidence ? (
               <Text className="mt-2 text-xs text-muted dark:text-muted-dark">
                 {t('home.confidence')}:{' '}

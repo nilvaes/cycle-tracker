@@ -113,16 +113,20 @@ function buildMarkedDates(periods: PeriodEntry[], color: string, textColor: stri
   return marked;
 }
 
-function addPrediction(
+function addExpectedWindow(
   marked: Record<string, any>,
-  predictedStartIso: string | null,
+  expectedStartIso: string | null,
+  expectedEndIso: string | null,
   color: string,
   textColor: string,
 ) {
-  if (!predictedStartIso) return marked;
-  for (let i = 0; i < 5; i += 1) {
-    const d = new Date(predictedStartIso);
-    d.setDate(d.getDate() + i);
+  if (!expectedStartIso || !expectedEndIso) return marked;
+  const start = new Date(expectedStartIso);
+  const end = new Date(expectedEndIso);
+  const days = Math.max(0, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  for (let i = 0; i <= days; i += 1) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
     const iso = d.toISOString().slice(0, 10);
     if (!marked[iso]) {
       marked[iso] = { color, textColor };
@@ -169,8 +173,8 @@ export default function CalendarScreen() {
   const [selectedNotes, setSelectedNotes] = useState<DailyNote[]>([]);
   const colorScheme = useColorScheme();
   const palette = Colors[colorScheme ?? 'light'];
-  const predictionColor = colorScheme === 'dark' ? '#3A322A' : '#F1E8DA';
-  // Keep fertile window visually distinct from period gold and prediction beige.
+  const expectedRangeColor = colorScheme === 'dark' ? '#2B3C52' : '#DDE8F8';
+  // Keep fertile window visually distinct from period gold and expected range blue.
   const fertileColor = colorScheme === 'dark' ? '#6FA38B' : '#2F8F78';
 
   const formatDisplayDate = (isoDate: string) => {
@@ -200,15 +204,21 @@ export default function CalendarScreen() {
   const markedDates = useMemo(() => {
     const prediction = buildCyclePrediction(periods.map((p) => p.startDate));
     const base = buildMarkedDates(periods, palette.primary, palette.text);
-    const predicted = addPrediction(base, prediction.nextPeriodStartIso, predictionColor, palette.text);
+    const withExpectedRange = addExpectedWindow(
+      base,
+      prediction.expectedStartIso,
+      prediction.expectedEndIso,
+      expectedRangeColor,
+      palette.text,
+    );
     return addFertileWindow(
-      predicted,
+      withExpectedRange,
       prediction.fertileStartIso,
       prediction.fertileEndIso,
       fertileColor,
       palette.text,
     );
-  }, [periods, palette.primary, palette.text, predictionColor, fertileColor]);
+  }, [periods, palette.primary, palette.text, expectedRangeColor, fertileColor]);
 
   const handleDayPress = (dateString: string) => {
     setSelectedDate(dateString);
@@ -258,76 +268,76 @@ export default function CalendarScreen() {
       className="flex-1 bg-background dark:bg-background-dark">
       <ScrollView>
         <View className="px-6 pt-8 pb-10">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
-            {t('calendar.title')}
+          <View className="flex-row items-center justify-between">
+            <Text className="text-3xl font-semibold text-foreground dark:text-foreground-dark">
+              {t('calendar.title')}
+            </Text>
+            <Pressable
+              className="h-9 w-9 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
+              onPress={() =>
+                Alert.alert(
+                  t('calendar.tipsTitle'),
+                  t('calendar.tipsBody'),
+                )
+              }>
+              <IconSymbol size={18} name="questionmark.circle" color={palette.icon} />
+            </Pressable>
+          </View>
+          <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
+            {t('calendar.highlighted')}
           </Text>
-          <Pressable
-            className="h-9 w-9 items-center justify-center rounded-full border border-border dark:border-border-dark active:opacity-80"
-            onPress={() =>
-              Alert.alert(
-                t('calendar.tipsTitle'),
-                t('calendar.tipsBody'),
-              )
-            }>
-            <IconSymbol size={18} name="questionmark.circle" color={palette.icon} />
-          </Pressable>
-        </View>
-        <Text className="mt-2 text-sm text-muted dark:text-muted-dark">
-          {t('calendar.highlighted')}
-        </Text>
 
-        <View className="mt-4 flex-row flex-wrap gap-3">
-          <View className="flex-row items-center gap-2">
-            <View className="h-3 w-3 rounded-full bg-primary" />
-            <Text className="text-xs text-muted dark:text-muted-dark">{t('calendar.logged')}</Text>
+          <View className="mt-4 flex-row flex-wrap gap-3">
+            <View className="flex-row items-center gap-2">
+              <View className="h-3 w-3 rounded-full bg-primary" />
+              <Text className="text-xs text-muted dark:text-muted-dark">{t('calendar.logged')}</Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <View className="h-3 w-3 rounded-full" style={{ backgroundColor: expectedRangeColor }} />
+              <Text className="text-xs text-muted dark:text-muted-dark">{t('calendar.expectedRange')}</Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <View className="h-3 w-3 rounded-full" style={{ backgroundColor: fertileColor }} />
+              <Text className="text-xs text-muted dark:text-muted-dark">{t('calendar.fertile')}</Text>
+            </View>
           </View>
-          <View className="flex-row items-center gap-2">
-            <View className="h-3 w-3 rounded-full" style={{ backgroundColor: predictionColor }} />
-            <Text className="text-xs text-muted dark:text-muted-dark">{t('calendar.predicted')}</Text>
-          </View>
-          <View className="flex-row items-center gap-2">
-            <View className="h-3 w-3 rounded-full" style={{ backgroundColor: fertileColor }} />
-            <Text className="text-xs text-muted dark:text-muted-dark">{t('calendar.fertile')}</Text>
-          </View>
-        </View>
 
           <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-4">
-          <Calendar
-            markingType="period"
-            markedDates={markedDates}
-            onDayPress={(day) => handleDayPress(day.dateString)}
-            onDayLongPress={(day) =>
-              Alert.alert(t('alerts.quickAddTitle'), t('alerts.quickAddBody'), [
-                {
-                  text: t('actions.addPeriod'),
-                  onPress: () => router.push(`/log?date=${day.dateString}`),
-                },
-                {
-                  text: t('actions.addSymptoms'),
-                  onPress: () => router.push(`/symptoms?date=${day.dateString}`),
-                },
-                {
-                  text: t('actions.addNote'),
-                  onPress: () => router.push(`/note?date=${day.dateString}`),
-                },
-                { text: t('actions.cancel'), style: 'cancel' },
-              ])
-            }
-            theme={{
-              backgroundColor: palette.surface,
-              calendarBackground: palette.surface,
-              textSectionTitleColor: palette.mutedText,
-              selectedDayBackgroundColor: palette.primary,
-              selectedDayTextColor: palette.text,
-              todayTextColor: palette.primary,
-              dayTextColor: palette.text,
-              monthTextColor: palette.text,
-              arrowColor: palette.primary,
-            }}
-            key={`calendar-${colorScheme}`}
-          />
-        </View>
+            <Calendar
+              markingType="period"
+              markedDates={markedDates}
+              onDayPress={(day) => handleDayPress(day.dateString)}
+              onDayLongPress={(day) =>
+                Alert.alert(t('alerts.quickAddTitle'), t('alerts.quickAddBody'), [
+                  {
+                    text: t('actions.addPeriod'),
+                    onPress: () => router.push(`/log?date=${day.dateString}`),
+                  },
+                  {
+                    text: t('actions.addSymptoms'),
+                    onPress: () => router.push(`/symptoms?date=${day.dateString}`),
+                  },
+                  {
+                    text: t('actions.addNote'),
+                    onPress: () => router.push(`/note?date=${day.dateString}`),
+                  },
+                  { text: t('actions.cancel'), style: 'cancel' },
+                ])
+              }
+              theme={{
+                backgroundColor: palette.surface,
+                calendarBackground: palette.surface,
+                textSectionTitleColor: palette.mutedText,
+                selectedDayBackgroundColor: palette.primary,
+                selectedDayTextColor: palette.text,
+                todayTextColor: palette.primary,
+                dayTextColor: palette.text,
+                monthTextColor: palette.text,
+                arrowColor: palette.primary,
+              }}
+              key={`calendar-${colorScheme}`}
+            />
+          </View>
 
         {selectedDate ? (
           <View className="mt-6 rounded-3xl border border-border dark:border-border-dark bg-surface dark:bg-surface-dark p-5">

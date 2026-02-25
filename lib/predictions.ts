@@ -8,6 +8,8 @@ export type CyclePrediction = {
   cycleRange: CycleRange | null;
   confidence: 'low' | 'medium' | 'high' | null;
   nextPeriodStartIso: string | null;
+  expectedStartIso: string | null;
+  expectedEndIso: string | null;
   daysUntilNext: number | null;
   fertileStartIso: string | null;
   ovulationIso: string | null;
@@ -69,6 +71,8 @@ export function buildCyclePrediction(startDates: string[], today = new Date()): 
       cycleRange: null,
       confidence: null,
       nextPeriodStartIso: null,
+      expectedStartIso: null,
+      expectedEndIso: null,
       daysUntilNext: null,
       fertileStartIso: null,
       ovulationIso: null,
@@ -88,6 +92,8 @@ export function buildCyclePrediction(startDates: string[], today = new Date()): 
       cycleRange: null,
       confidence: null,
       nextPeriodStartIso: null,
+      expectedStartIso: null,
+      expectedEndIso: null,
       daysUntilNext: null,
       fertileStartIso: null,
       ovulationIso: null,
@@ -114,9 +120,16 @@ export function buildCyclePrediction(startDates: string[], today = new Date()): 
   }
 
   const todayIso = toIsoDate(today);
-  let nextPeriodStartIso = addDays(sorted[sorted.length - 1], averageCycleDays);
+  const lastStartIso = sorted[sorted.length - 1];
+  let nextPeriodStartIso = addDays(lastStartIso, averageCycleDays);
+  let expectedStartIso = addDays(lastStartIso, cycleRange.min);
+  let expectedEndIso = addDays(lastStartIso, cycleRange.max);
   while (nextPeriodStartIso <= todayIso) {
     nextPeriodStartIso = addDays(nextPeriodStartIso, averageCycleDays);
+  }
+  while (expectedEndIso <= todayIso) {
+    expectedStartIso = addDays(expectedStartIso, averageCycleDays);
+    expectedEndIso = addDays(expectedEndIso, averageCycleDays);
   }
 
   const daysUntilNext = daysBetweenIso(todayIso, nextPeriodStartIso);
@@ -129,6 +142,8 @@ export function buildCyclePrediction(startDates: string[], today = new Date()): 
     cycleRange,
     confidence,
     nextPeriodStartIso,
+    expectedStartIso,
+    expectedEndIso,
     daysUntilNext,
     fertileStartIso,
     ovulationIso,
