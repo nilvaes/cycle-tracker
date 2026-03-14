@@ -11,7 +11,7 @@ import { loadSettings, saveSettings } from '@/lib/storage';
 import { useCallback, useEffect, useState } from 'react';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { scheduleBirthControlReminder, schedulePeriodReminder } from '@/lib/reminders';
-import * as Notifications from 'expo-notifications';
+import * as Notifications from '@/lib/notifications';
 import { t } from '@/lib/i18n';
 import { useLanguage } from '@/lib/language';
 import * as DocumentPicker from 'expo-document-picker';
@@ -91,6 +91,16 @@ export default function SettingsScreen() {
       symptoms,
       notes,
     };
+    if (Platform.OS === 'web') {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cycle-tracker-export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
     const fileUri = `${FileSystem.documentDirectory}cycle-tracker-export.json`;
     await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(payload, null, 2));
 
@@ -162,6 +172,16 @@ export default function SettingsScreen() {
       ]);
     });
     const csv = toCsv(rows);
+    if (Platform.OS === 'web') {
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cycle-tracker-export.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
     const fileUri = `${FileSystem.documentDirectory}cycle-tracker-export.csv`;
     await FileSystem.writeAsStringAsync(fileUri, csv);
     if (await Sharing.isAvailableAsync()) {
@@ -196,6 +216,46 @@ export default function SettingsScreen() {
   };
 
   const handleImport = async () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json,.json';
+      input.onchange = async (e) => {
+        const f = (e.target as HTMLInputElement).files?.[0];
+        if (!f) return;
+        const content = await f.text();
+        const data = JSON.parse(content) as { periods?: any[]; symptoms?: any[]; notes?: any[] };
+        await importPeriods(
+          (data.periods ?? []).map((p) => ({
+            startDate: p.startDate,
+            endDate: p.endDate ?? null,
+            flowIntensity: p.flowIntensity,
+            createdAt: p.createdAt ?? Date.now(),
+          })),
+        );
+        await importSymptomLogs(
+          (data.symptoms ?? []).map((s) => ({
+            logDate: s.logDate,
+            symptoms: s.symptoms ?? [],
+            moods: s.moods ?? [],
+            notes: s.notes ?? null,
+            createdAt: s.createdAt ?? Date.now(),
+          })),
+        );
+        await importNotes(
+          (data.notes ?? []).map((n) => ({
+            logDate: n.logDate,
+            text: n.text ?? '',
+            createdAt: n.createdAt ?? Date.now(),
+          })),
+        );
+        emitDataChanged();
+        await reconcileReminderSchedules();
+        Alert.alert(t('alerts.importCompleteTitle'), t('alerts.importCompleteBody'));
+      };
+      input.click();
+      return;
+    }
     const result = await DocumentPicker.getDocumentAsync({
       type: ['application/json', 'text/csv', 'text/plain'],
       copyToCacheDirectory: true,
@@ -496,11 +556,11 @@ export default function SettingsScreen() {
           <Pressable
             className="mt-4 rounded-none border border-border dark:border-border-dark px-5 py-3 active:scale-95 active:opacity-80"
             onPress={async () => {
-              await Notifications.cancelAllScheduledNotificationsAsync();
-              const current = await loadSettings();
-              await saveSettings({
-                ...current,
-                birthControlEnabled: false,
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          const current = await loadSettings();
+          await saveSettings({
+            ...current,
+            birthControlEnabled: false,
                 periodReminderEnabled: false,
                 birthControlNotificationId: null,
                 periodReminderNotificationId: null,
