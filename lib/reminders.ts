@@ -28,7 +28,6 @@ async function ensureNotificationPermission() {
 export async function scheduleBirthControlReminder(
   settings: AppSettings,
 ): Promise<string | null> {
-  if (Platform.OS === 'web') return null;
   if (settings.birthControlNotificationId) {
     await Notifications.cancelScheduledNotificationAsync(
       settings.birthControlNotificationId,
@@ -71,7 +70,6 @@ export async function scheduleBirthControlReminder(
 }
 
 export async function schedulePeriodReminder(settings: AppSettings): Promise<string | null> {
-  if (Platform.OS === 'web') return null;
   if (settings.periodReminderNotificationId) {
     await Notifications.cancelScheduledNotificationAsync(
       settings.periodReminderNotificationId,
